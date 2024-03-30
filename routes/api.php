@@ -32,10 +32,10 @@ Route::post('delete_company', 'CompanyController@delete_company');
 Route::get('get_companies', 'CompanyController@get_companies');
 
 
-Route::middleware('api_check')->post('add_event', 'EventsController@add_event');
+Route::post('add_event', 'EventsController@add_event');
 Route::middleware('api_check')->post('get_single_event', 'EventsController@get_single_event');
 Route::post('update_event', 'EventsController@update_event');
-Route::middleware('api_check')->post('delete_event', 'EventsController@delete_event');
+Route::post('delete_event', 'EventsController@delete_event');
 Route::middleware('api_check')->get('get_events', 'EventsController@get_events');
 
 // });
