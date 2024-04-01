@@ -38,6 +38,15 @@ Route::post('update_event', 'EventsController@update_event');
 Route::post('delete_event', 'EventsController@delete_event');
 Route::middleware('api_check')->get('get_events', 'EventsController@get_events');
 
+
+Route::post('add_user', 'UsersModuleController@add_user');
+Route::middleware('api_check')->post('get_single_user', 'UsersModuleController@get_single_user');
+Route::post('update_user', 'UsersModuleController@update_user');
+Route::post('delete_user', 'UsersModuleController@delete_user');
+Route::middleware('api_check')->get('get_users', 'UsersModuleController@get_users');
+
+
+
 // });
 
 
