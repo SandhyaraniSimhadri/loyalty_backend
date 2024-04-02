@@ -47,8 +47,8 @@ class CampaignsController extends Controller{
             $aid= DB::table('campaigns')->insertGetId($data);
             $event_value = DB::table('events')
             ->where('id','=',$request->event_id)
-            ->first();
-            if($event_value['title']=="PREDICTION EVENT"){
+            ->get();
+            if($event_value[0]->title=="PREDICTION EVENT"){
                 $games = json_decode($request->games, true);
         // return $games;
 
