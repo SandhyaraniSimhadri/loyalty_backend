@@ -46,6 +46,11 @@ Route::post('delete_user', 'UsersModuleController@delete_user');
 Route::middleware('api_check')->get('get_users', 'UsersModuleController@get_users');
 
 
+Route::post('add_campaign', 'CampaignsController@add_campaign');
+Route::middleware('api_check')->post('get_single_campaign', 'CampaignsController@get_single_campaign');
+Route::post('update_campaign', 'CampaignsController@update_campaign');
+Route::post('delete_campaign', 'CampaignsController@delete_campaign');
+Route::middleware('api_check')->get('get_campaigns', 'CampaignsController@get_campaigns');
 
 // });
 
