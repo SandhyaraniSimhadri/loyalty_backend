@@ -25,7 +25,7 @@ class Cors {
         
         $response = $next($request);
         // $response->headers->set('Access-Control-Allow-Origin', 'http://localhost:4200/');
-        $response->headers->set('Access-Control-Allow-Origin', 'http://13.60.37.138/');
+        $response->headers->set('Access-Control-Allow-Origin', 'http://16.16.79.221');
         $response->headers->set('Access-Control-Allow-Methods', 'POST, GET');
         $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, Application', 'ip');
         return $response; 
