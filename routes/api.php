@@ -22,7 +22,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 
 
-// Route::group(['middleware' => ['cors']], function () {
+Route::group(['middleware' => ['cors']], function () {
 Route::post('verify_user', 'UsersController@verify_user');
 
 Route::post('add_company', 'CompanyController@add_company');
@@ -57,7 +57,7 @@ Route::post('users_file_import','UsersModuleController@users_file_import');
 Route::get('download_users_sample', 'UsersModuleController@download_users_sample');
 Route::post('get_users_report', 'UsersModuleController@get_users_report');
 
-// });
+});
 
 
 
