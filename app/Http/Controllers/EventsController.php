@@ -36,7 +36,8 @@ class EventsController extends Controller{
         $data = array(
           
             'title' => $request->title,
-            'description' => $request->description
+            'description' => $request->description,
+            'terms_conditions'=> $request->terms_conditions
             );
 
             $aid= DB::table('events')->insertGetId($data);
@@ -90,7 +91,9 @@ class EventsController extends Controller{
         ->update([
             
             'title' => $request->title,
-            'description' => $request->description
+            'description' => $request->description,
+            'terms_conditions'=> $request->terms_conditions
+
         ]);
         if($update_data){
             $data = array('status' => true, 'msg' => 'Event details updated successfully');

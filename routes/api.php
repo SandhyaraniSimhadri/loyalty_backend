@@ -48,9 +48,14 @@ Route::middleware('api_check')->get('get_users', 'UsersModuleController@get_user
 
 Route::post('add_campaign', 'CampaignsController@add_campaign');
 Route::middleware('api_check')->post('get_single_campaign', 'CampaignsController@get_single_campaign');
+Route::middleware('api_check')->post('get_report', 'CampaignsController@get_report');
 Route::post('update_campaign', 'CampaignsController@update_campaign');
 Route::post('delete_campaign', 'CampaignsController@delete_campaign');
 Route::middleware('api_check')->get('get_campaigns', 'CampaignsController@get_campaigns');
+Route::post('users_file_import','UsersModuleController@users_file_import');
+
+Route::get('download_users_sample', 'UsersModuleController@download_users_sample');
+Route::post('get_users_report', 'UsersModuleController@get_users_report');
 
 // });
 

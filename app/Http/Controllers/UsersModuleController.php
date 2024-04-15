@@ -9,10 +9,12 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Imports\UsersImport;
 
 use App;
 use Response;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\UsersReportExport;
 
 
 use App\Services\UserDataService;
@@ -32,17 +34,23 @@ class UsersModuleController extends Controller{
             $image = $request->file('image')->store('images', 'public');
             $image = 'storage/'.$image;
         }
+        $md5_password = md5('123456');
         $date = date('Y-m-d H:i:s');
         $data = array(
           
-            'name' => $request->name,
+            'user_name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
+            'mobile_no' => $request->phone,
             'company_id' => $request->company_id,
-            'city' => $request->city
+            'city' => $request->city,
+            'password'=>$md5_password,
+            'user_type'=>3,
+            'is_active'=>1,
+            'last_login'=>$date,
+
             );
 
-            $aid= DB::table('users_data')->insertGetId($data);
+            $aid= DB::table('users')->insertGetId($data);
 
         if ($aid) { 
                 $data = array('status' => true, 'msg' => 'User added successfully');
@@ -57,12 +65,13 @@ class UsersModuleController extends Controller{
     }
     public function get_users(REQUEST $request){
 
-
-        $query=DB::table('users_data as u')
+        $query=DB::table('users as u')
         ->join('company as c','u.company_id', '=','c.id')
         ->where('u.deleted','=',0)
         ->where('c.deleted','=',0)
-        ->select('u.*','c.company_name',DB::raW('u.image as avatar'))
+        ->where('u.user_type','=',3)
+        ->where('u.is_active','=',1)
+        ->select('u.*','c.company_name',DB::raW('u.avatar as avatar'))
         ->orderBy('u.created_at','DESC');
 
         if ($request['logged_user_type'] == 1) {
@@ -74,12 +83,12 @@ class UsersModuleController extends Controller{
     }
 
     public function get_single_user(REQUEST $request){
-        $user_info=DB::table('users_data as u')
+        $user_info=DB::table('users as u')
         ->join('company as c','u.company_id', '=','c.id')
         ->where('u.id','=',$request->id)
         ->where('u.deleted','=',0)
         ->where('c.deleted','=',0)
-        ->select('u.*','c.company_name',DB::raw('u.image as avatar'))
+        ->select('u.*','c.company_name',DB::raw('u.avatar as avatar'))
         ->first();
         $data = array('status' => true, 'data' => $user_info);
         return response()->json($data);
@@ -92,14 +101,15 @@ class UsersModuleController extends Controller{
             $image = $request->file('image')->store('images', 'public');
             $image = 'storage/'.$image;
         }
-        $update_data=DB::table('users_data')
+        $update_data=DB::table('users')
         ->where('id','=',$request->id)
         ->update([
             'company_id' => $request->company_id,
-            'name' => $request->name,
+            'user_name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
-            'city' => $request->city
+            'mobile_no' => $request->phone,
+            'city' => $request->city,
+            'avatar'=> $image
         ]);
         if($update_data){
             $data = array('status' => true, 'msg' => 'User details updated successfully');
@@ -112,7 +122,7 @@ class UsersModuleController extends Controller{
         }
     }
     public function delete_user(REQUEST $request){
-        $deleted_info=DB::table('users_data')
+        $deleted_info=DB::table('users')
         ->where('id','=',$request->id)
         ->update([
             'deleted'=>1,
@@ -128,5 +138,64 @@ class UsersModuleController extends Controller{
             return response()->json($data);
         }
     }
+    public function users_file_import(Request $request) 
+    {
+    $collection = Excel::toCollection(new UsersImport, $request->file('file'))->toArray();
+    // $collection = Excel::toCollection(new UsersImport, $request->file('file'), null, 'csv')->toArray();
+    $data1 = $collection[0];
+    // return $data1;
+    $date = date('Y-m-d H:i:s');
+    $count=0;
+    $md5_password = md5('123456');
+    $date = date('Y-m-d H:i:s');
+    foreach ($data1 as $user) {
     
+        $company_info = DB::table('company as c')
+        ->where('c.company_name','=',$user['company_name']) 
+        ->first();
+   
+    if($company_info && $user['user_name'] && $user['email'] && $user['mobile_number'] && $user['city'])
+    {
+        // return true;
+       $count= $count+1;
+  
+        $data = array(
+            'company_id' => $company_info->id,
+            'user_name' => $user['user_name'],
+            'email' => $user['email'],
+            'mobile_no' => $user['mobile_number'],
+            'city' => $user['city'],
+            'password'=>$md5_password,
+            'user_type'=>3,
+            'last_login'=>$date,
+            'is_active'=>1
+
+            );
+          
+            $aid= DB::table('users')->insertGetId($data);}
+            else{
+                continue;
+            }
+        }
+                return json_encode(array('status' => true, 'msg' => 'Users data uploaded successfully','count'=>$count));
+            
+    }
+    public function download_users_sample()
+    {
+        $filepath = public_path('samples/users_sample.csv');
+        // return $filepath;
+        return Response::download($filepath);
+    }
+    public function get_users_report(Request $request)
+    {
+        // Assuming 'rows' is an array in the request
+        $rows = $request->input('rows');
+        // return $rows;
+        // Additional validation if needed
+        if (!is_array($rows)) {
+            return response()->json(['error' => 'Invalid data format'], 400);
+        }
+    
+        return Excel::download(new UsersReportExport($rows), 'reports' . '.csv');
+    }
 }
