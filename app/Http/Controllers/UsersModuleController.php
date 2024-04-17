@@ -105,9 +105,9 @@ class UsersModuleController extends Controller{
         ->where('id','=',$request->id)
         ->update([
             'company_id' => $request->company_id,
-            'user_name' => $request->name,
+            'user_name' => $request->user_name,
             'email' => $request->email,
-            'mobile_no' => $request->phone,
+            'mobile_no' => $request->mobile_no,
             'city' => $request->city,
             'avatar'=> $image
         ]);
