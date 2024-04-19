@@ -128,7 +128,7 @@ class CampaignsController extends Controller{
             $games = DB::table('games')
                 ->where('campaign_id', '=', $campaign->id)
                 ->where('deleted', '=', 0)
-                ->select('id', 'name', 'team_a', 'team_b','points')
+                ->select('id', 'name', 'team_a', 'team_b','points','selected_winner')
                 ->get();
 
 
@@ -264,7 +264,7 @@ class CampaignsController extends Controller{
             ->where('c.campaign_id', '=', $campaign->id)
             ->where('c.deleted', '=', 0)
             ->where('u.deleted', '=', 0)
-            ->select('c.id', 'u.user_name')
+            ->select('c.id', 'u.user_name','c.team_name')
             ->get();
 
     
@@ -276,5 +276,12 @@ class CampaignsController extends Controller{
     
         return response()->json(['status' => true, 'data' => $campaigns]);
     }
-    
+    public function select_winner(REQUEST $request){
+        $selected_winner=DB::table('games')
+        ->where('id','=',$request->id)
+        ->update([
+            'selected_winner'=>$request->winner,
+        ]);
+        return response()->json(['status' => true,'msg'=>"Winner selected successfully", 'data' => $selected_winner]);
+    }
 }

@@ -56,6 +56,7 @@ Route::post('users_file_import','UsersModuleController@users_file_import');
 
 Route::get('download_users_sample', 'UsersModuleController@download_users_sample');
 Route::post('get_users_report', 'UsersModuleController@get_users_report');
+Route::post('select_winner', 'CampaignsController@select_winner');
 
 });
 
