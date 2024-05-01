@@ -18,76 +18,30 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Services\UserDataService;
 
 
-class CampaignsController extends Controller{
+class PredictionsController extends Controller{
     public function __construct()
     {
     }
     
 
-    public function add_campaign(Request $request)
+    public function add_prediction_winner(Request $request)
     {
-        $image=null;
-        if ($request->hasFile('image')) {
-            // return $request->hasFile('homeTeamLogo')
-            $image = $request->file('image')->store('images', 'public');
-            $image = 'storage/'.$image;
-        }
+       
         // return $request;
         $date = date('Y-m-d H:i:s');
-        $data = array(
-          
-            'campaign_title' => $request->campaign_title,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
-            'event_id' => $request->event_id,
-            'company_id'=> $request->company_id
+     
+
+           
+            $updated_value = DB::table('campaign_participants')
+            ->where('campaign_id','=',$request->campaign_id)
+            ->where('user_id','=', $request['logged_id'])
+            ->update(
+                ['team_name'=> $request->selected_winner]
             );
+      
 
-            $aid= DB::table('campaigns')->insertGetId($data);
-            $event_value = DB::table('events')
-            ->where('id','=',$request->event_id)
-            ->get();
-            if($event_value[0]->title=="PREDICTION EVENT"){
-
-                $users= DB::table('users')
-                ->where('company_id','=',$request->company_id)
-                ->get();
-
-                foreach($users as $user){
-                    // return $user;
-                    $data = array(
-          
-                        'user_id' => $user->id,
-                        'campaign_id' => $aid,
-                       
-                        );
-            
-                        $gid= DB::table('campaign_participants')->insertGetId($data);
-                }
-                $games = json_decode($request->games, true);
-        // return $games;
-
-                if($games){
-                foreach($games as $game){
-                    // return $game;
-                    $data = array(
-          
-                        'name' => $game['name'],
-                        'team_a' => $game['team_a'],
-                        'team_b' => $game['team_b'],
-                        'campaign_id'=>$aid,
-                        'points'=>$game['points'],
-                        );
-            
-                        $gid= DB::table('games')->insertGetId($data);
-                }}
-              
-            }
-
-        if ($aid) { 
-                $data = array('status' => true, 'msg' => 'Campaign added successfully');
+        if ($updated_value) { 
+                $data = array('status' => true, 'msg' => 'Winner prediction added successfully');
                 return response()->json($data);
 
         } else {
@@ -97,32 +51,71 @@ class CampaignsController extends Controller{
         }
 
     }
-    public function get_campaigns(Request $request) {
+    public function get_prediction_details(Request $request) {
         // Fetch campaigns
+        $campaign_data= DB::table('campaign_participants')
+        ->where('user_id', '=',  $request['logged_id'])
+        ->first();
+        if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
-        ->join('company as c', 'cam.company_id', '=', 'c.id')
-            ->join('events as e', 'cam.event_id', '=', 'e.id')
-            ->where('e.deleted', '=', 0)
-            ->where('cam.deleted', '=', 0)
-            ->where('c.deleted', '=', 0)
-            ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title','c.company_name as company_name')
-            ->orderBy('cam.created_at', 'DESC')
+        ->join('events as e', 'cam.event_id', '=', 'e.id')
+        ->where('cam.id','=',$campaign_data->campaign_id)
+        ->where('e.deleted', '=', 0)
+        ->where('cam.deleted', '=', 0)
+        ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
+        ->orderBy('cam.created_at', 'DESC')
+        ->get();
+
+    // Fetch games associated with each campaign
+    foreach ($campaigns as $campaign) {
+        $games = DB::table('games')
+            ->where('campaign_id', '=', $campaign->id)
+            ->where('deleted', '=', 0)
+            ->select('id', 'name', 'team_a', 'team_b')
             ->get();
-    
-        // Fetch games associated with each campaign
-        foreach ($campaigns as $campaign) {
-            $games = DB::table('games')
-                ->where('campaign_id', '=', $campaign->id)
-                ->where('deleted', '=', 0)
-                ->select('id', 'name', 'team_a', 'team_b','points')
-                ->get();
-    
-            // Add games to the campaign object
-            $campaign->games = $games;
-        }
-    
-        return response()->json(['status' => true, 'data' => $campaigns]);
+
+        $participants = DB::table('campaign_participants as c')
+        ->join('users as u', 'c.user_id', '=', 'u.id')
+        ->where('c.campaign_id', '=', $campaign->id)
+        ->where('c.deleted', '=', 0)
+        ->where('u.deleted', '=', 0)
+        ->select('c.id', 'u.user_name','c.team_name')
+        ->get();
+
+        $participants = DB::table('campaign_participants as c')
+            ->join('users as u', 'c.user_id', '=', 'u.id')
+            ->where('c.campaign_id', '=', $campaign->id)
+            ->where('c.deleted', '=', 0)
+            ->where('u.deleted', '=', 0)
+            ->select('c.id', 'u.user_name', 'c.team_name')
+            ->get();
+
+        $teamASelections = $participants->where('team_name', '=', $games[0]->team_a)->count();
+        $teamBSelections = $participants->where('team_name', '=', $games[0]->team_b)->count();
+
+        // Calculate percentage of selection for each team
+        $totalSelections = $teamASelections + $teamBSelections;
+        $teamAPercentage = $totalSelections > 0 ? ($teamASelections / $totalSelections) * 100 : 0;
+        $teamBPercentage = $totalSelections > 0 ? ($teamBSelections / $totalSelections) * 100 : 0;
+
+        // Assign percentages to game object
+        $games[0]->team_a_percentage = $teamAPercentage;
+        $games[0]->team_b_percentage = $teamBPercentage;
+
+        // Add games to the campaign object
+        $campaign->games = $games;
+        $campaign->participants = $participants;
+        $campaign->self = $campaign_data;
+
+
     }
+
+
+    return response()->json(['status' => true, 'data' => $campaigns]);}
+    else{
+        return response()->json(['status' => true, 'data' =>[]]);
+    }
+}
     
     
 
