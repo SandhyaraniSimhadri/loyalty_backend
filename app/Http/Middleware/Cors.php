@@ -23,10 +23,14 @@ class Cors {
     
     public function handle($request, Closure $next) {
         
-        $response = $next($request);
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-        $response->headers->set('Access-Control-Allow-Methods', 'POST, GET');
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, Application', 'ip');
-        return $response; 
+        // $response = $next($request);
+        // $response->headers->set('Access-Control-Allow-Origin', '*');
+        // $response->headers->set('Access-Control-Allow-Methods', 'POST, GET');
+        // $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, Application', 'ip');
+        // return $response; 
+
+        return $next($request)
+        ->header('Access-Control-Allow-Origin', 'http://16.16.79.221')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     }
 }
