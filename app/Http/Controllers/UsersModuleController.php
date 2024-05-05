@@ -52,6 +52,17 @@ class UsersModuleController extends Controller{
 
             $aid= DB::table('users')->insertGetId($data);
 
+        $campaigns_data = DB::table('campaigns')
+        ->where('company_id','=',$request->company_id)
+        ->get();
+        foreach($campaigns_data as $campaign){
+            $data = array(
+          
+                'user_id' => $aid,
+                'campaign_id' => $campaign->id,
+                );
+    
+        }
         if ($aid) { 
                 $data = array('status' => true, 'msg' => 'User added successfully');
                 return response()->json($data);
