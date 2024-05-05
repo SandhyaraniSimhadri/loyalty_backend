@@ -61,7 +61,7 @@ class UsersModuleController extends Controller{
                 'user_id' => $aid,
                 'campaign_id' => $campaign->id,
                 );
-    
+                $pid= DB::table('campaign_participants')->insertGetId($data);
         }
         if ($aid) { 
                 $data = array('status' => true, 'msg' => 'User added successfully');
