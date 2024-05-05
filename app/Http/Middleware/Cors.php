@@ -30,8 +30,8 @@ class Cors {
         // return $response; 
 
         return $next($request)
-        // ->header('Access-Control-Allow-Origin', 'http://16.16.79.221')
-        ->header('Access-Control-Allow-Origin', 'http://localhost:4200')
+        ->header('Access-Control-Allow-Origin', 'http://16.16.79.221')
+        // ->header('Access-Control-Allow-Origin', 'http://localhost:4200')
 
         ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     }

@@ -26,6 +26,8 @@ class APICheck
                     $request['logged_id'] = $user->id;
                     $request['logged_name'] = $user->user_name;
                     $request['logged_email'] = $user->email;
+                    $request['logged_company'] = $user->company_id;
+
                     $request['logged_user_type'] = $user->user_type;
                     return $next($request);
                 } else {

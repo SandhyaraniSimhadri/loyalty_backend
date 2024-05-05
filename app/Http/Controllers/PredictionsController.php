@@ -30,17 +30,23 @@ class PredictionsController extends Controller{
         // return $request;
         $date = date('Y-m-d H:i:s');
      
-
+        $data = array(
+                    'user_id' => $request['logged_id'],
+                    'campaign_id' => $campaign->id,
+                    'team_name'=> $request->selected_winner
+                    );
+                    
+            $pid= DB::table('campaign_participants')->insertGetId($data);
            
-            $updated_value = DB::table('campaign_participants')
-            ->where('campaign_id','=',$request->campaign_id)
-            ->where('user_id','=', $request['logged_id'])
-            ->update(
-                ['team_name'=> $request->selected_winner]
-            );
+            // $updated_value = DB::table('campaign_participants')
+            // ->where('campaign_id','=',$request->campaign_id)
+            // ->where('user_id','=', $request['logged_id'])
+            // ->update(
+            //     []
+            // );
       
 
-        if ($updated_value) { 
+        if ($pid) { 
                 $data = array('status' => true, 'msg' => 'Winner prediction added successfully');
                 return response()->json($data);
 
@@ -53,42 +59,42 @@ class PredictionsController extends Controller{
     }
     public function get_prediction_details(Request $request) {
         // Fetch campaigns
-        $campaign_data= DB::table('campaign_participants')
-        ->where('user_id', '=',  $request['logged_id'])
+        $campaign_data= DB::table('campaigns')
+        ->where('company_id', '=',  $request['logged_company'])
         ->first();
+
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
-        ->where('cam.id','=',$campaign_data->campaign_id)
+        ->where('cam.id','=',$campaign_data->id)
         ->where('e.deleted', '=', 0)
         ->where('cam.deleted', '=', 0)
         ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
         ->orderBy('cam.created_at', 'DESC')
         ->get();
-
+        $campaign=$campaigns[0];
     // Fetch games associated with each campaign
-    foreach ($campaigns as $campaign) {
+    if($campaign->event_title=="PREDICTION EVENT"){
         $games = DB::table('games')
             ->where('campaign_id', '=', $campaign->id)
             ->where('deleted', '=', 0)
             ->select('id', 'name', 'team_a', 'team_b')
             ->get();
 
-        $participants = DB::table('campaign_participants as c')
-        ->join('users as u', 'c.user_id', '=', 'u.id')
+       
+
+
+        $participants = DB::table('users as u')
+        ->leftJoin('campaign_participants as c', 'u.id', '=', 'c.user_id')
+        ->where('u.company_id', '=', $campaign->company_id)
         ->where('c.campaign_id', '=', $campaign->id)
-        ->where('c.deleted', '=', 0)
+        ->orWhereNull('c.campaign_id') // Include records where campaign_id is null
         ->where('u.deleted', '=', 0)
-        ->select('c.id', 'u.user_name','c.team_name')
+        ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id') // Include campaign_id
         ->get();
 
-        $participants = DB::table('campaign_participants as c')
-            ->join('users as u', 'c.user_id', '=', 'u.id')
-            ->where('c.campaign_id', '=', $campaign->id)
-            ->where('c.deleted', '=', 0)
-            ->where('u.deleted', '=', 0)
-            ->select('c.id', 'u.user_name', 'c.team_name')
-            ->get();
+
+       
 
         $teamASelections = $participants->where('team_name', '=', $games[0]->team_a)->count();
         $teamBSelections = $participants->where('team_name', '=', $games[0]->team_b)->count();
@@ -105,13 +111,14 @@ class PredictionsController extends Controller{
         // Add games to the campaign object
         $campaign->games = $games;
         $campaign->participants = $participants;
+    }
         $campaign->self = $campaign_data;
 
 
-    }
+    
 
 
-    return response()->json(['status' => true, 'data' => $campaigns]);}
+    return response()->json(['status' => true, 'data' => $campaign]);}
     else{
         return response()->json(['status' => true, 'data' =>[]]);
     }
@@ -249,42 +256,7 @@ class PredictionsController extends Controller{
             return response()->json($data);
         }
     }
-    public function get_report(REQUEST $request){
 
-        $campaigns = DB::table('campaigns as cam')
-            ->join('events as e', 'cam.event_id', '=', 'e.id')
-            ->where('cam.id','=',$request->id)
-            ->where('e.deleted', '=', 0)
-            ->where('cam.deleted', '=', 0)
-            ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
-            ->orderBy('cam.created_at', 'DESC')
-            ->get();
-    
-        // Fetch games associated with each campaign
-        foreach ($campaigns as $campaign) {
-            $games = DB::table('games')
-                ->where('campaign_id', '=', $campaign->id)
-                ->where('deleted', '=', 0)
-                ->select('id', 'name', 'team_a', 'team_b')
-                ->get();
-
-            $participants = DB::table('campaign_participants as c')
-            ->join('users as u', 'c.user_id', '=', 'u.id')
-            ->where('c.campaign_id', '=', $campaign->id)
-            ->where('c.deleted', '=', 0)
-            ->where('u.deleted', '=', 0)
-            ->select('c.id', 'u.user_name','c.team_name')
-            ->get();
-
-    
-            // Add games to the campaign object
-            $campaign->games = $games;
-            $campaign->participants = $participants;
-
-        }
-    
-        return response()->json(['status' => true, 'data' => $campaigns]);
-    }
     public function select_winner(REQUEST $request){
         $selected_winner=DB::table('games')
         ->where('id','=',$request->id)
