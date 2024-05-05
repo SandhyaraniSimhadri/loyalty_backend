@@ -61,10 +61,10 @@ class EventsController extends Controller{
         ->select('e.*',DB::raW('e.image as avatar'))
         ->orderBy('e.created_at','DESC');
     
-        if ($request['logged_user_type'] == 1) {
-            $events_info = $query->get();
-        }
-
+        // if ($request['logged_user_type'] == 1) {
+          
+        // }
+        $events_info = $query->get();
         return response()->json(['status' => true, 'data' => $events_info]);
            
     }

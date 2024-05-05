@@ -139,7 +139,7 @@ class UsersController extends Controller{
         ->where('password','=',$md5_password)
         ->select('is_active')
         ->get();
-        // return $user_data;
+        return $user_data;
         
         // return $user_data->is_active;
         if($user_data){

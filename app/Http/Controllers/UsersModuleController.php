@@ -74,9 +74,9 @@ class UsersModuleController extends Controller{
         ->select('u.*','c.company_name',DB::raW('u.avatar as avatar'))
         ->orderBy('u.created_at','DESC');
 
-        if ($request['logged_user_type'] == 1) {
+        // if ($request['logged_user_type'] == 1) {
             $users_info = $query->get();
-        } 
+        // } 
 
         return response()->json(['status' => true, 'data' => $users_info]);
            
