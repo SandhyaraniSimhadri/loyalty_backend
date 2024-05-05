@@ -58,7 +58,7 @@ class PredictionsController extends Controller{
         ->first();
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
-        ->join('events as e', 'cam.event_id', '=', 'e.id')
+        ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
         ->where('cam.id','=',$campaign_data->campaign_id)
         ->where('e.deleted', '=', 0)
         ->where('cam.deleted', '=', 0)
