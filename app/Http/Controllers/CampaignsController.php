@@ -281,7 +281,7 @@ class CampaignsController extends Controller{
                 ->where('c.campaign_id', '=', $campaign->id)
                 ->orWhereNull('c.campaign_id') // Include records where campaign_id is null
                 ->where('u.deleted', '=', 0)
-                ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id') // Include campaign_id
+                ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id','u.company_id') // Include campaign_id
                 ->get();
 
     
