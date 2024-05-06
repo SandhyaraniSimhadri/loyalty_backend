@@ -84,14 +84,18 @@ class PredictionsController extends Controller{
        
 
 
-        $participants = DB::table('users as u')
-        ->leftJoin('campaign_participants as c', 'u.id', '=', 'c.user_id')
-        ->where('u.company_id', '=', $campaign->company_id)
-        ->where('c.campaign_id', '=', $campaign->id)
-        ->orWhereNull('c.campaign_id') // Include records where campaign_id is null
-        ->where('u.deleted', '=', 0)
-        ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id') // Include campaign_id
-        ->get();
+   
+            $participants = DB::table('users as u')
+            ->leftJoin('campaign_participants as c', 'u.id', '=', 'c.user_id')
+            ->where('u.company_id', '=', $campaign->company_id)
+            ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+            ->where(function ($query) use ($campaign) {
+                $query->where('c.campaign_id', '=', $campaign->id)
+                      ->orWhereNull('c.campaign_id'); // Include records where campaign_id is null
+            })
+            ->where('u.deleted', '=', 0)
+            ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id', 'u.company_id') // Include campaign_id
+            ->get();
 
 
        
