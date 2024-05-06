@@ -32,7 +32,7 @@ class PredictionsController extends Controller{
      
         $data = array(
                     'user_id' => $request['logged_id'],
-                    'campaign_id' => $campaign->id,
+                    'campaign_id' =>  $request->campaign_id,
                     'team_name'=> $request->selected_winner
                     );
                     
