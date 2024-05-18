@@ -32,7 +32,7 @@ class CampaignsController extends Controller{
             $image = $request->file('image')->store('images', 'public');
             $image = 'storage/'.$image;
         }
-        // return $request;
+       
         $date = date('Y-m-d H:i:s');
         $data = array(
           
@@ -51,27 +51,27 @@ class CampaignsController extends Controller{
             ->get();
             if($event_value[0]->title=="PREDICTION EVENT"){
 
-                // $users= DB::table('users')
-                // ->where('company_id','=',$request->company_id)
-                // ->get();
-
-                // foreach($users as $user){
-                //     // return $user;
-                //     $data = array(
-          
-                //         'user_id' => $user->id,
-                //         'campaign_id' => $aid,
-                       
-                //         );
-            
-                //         $gid= DB::table('campaign_participants')->insertGetId($data);
-                // }
+        
                 $games = json_decode($request->games, true);
-        // return $games;
+      
 
                 if($games){
+                    $i=0;
                 foreach($games as $game){
-                    // return $game;
+                    $team_a_image=null;
+                    $team_b_image=null;
+                  
+                    if ($request->hasFile("team_a_image_{$i}")) {
+                        // return $request->hasFile('homeTeamLogo')
+                        $team_a_image = $request->file("team_b_image_{$i}")->store('images', 'public');
+                        $team_a_image = 'storage/'.$team_a_image;
+                    }
+                    if ($request->hasFile("team_b_image_{$i}")) {
+                        // return $request->hasFile('homeTeamLogo')
+                        $team_b_image = $request->file("team_b_image_{$i}")->store('images', 'public');
+                        $team_b_image = 'storage/'.$team_b_image;
+                    }
+                    // return $request;
                     $data = array(
           
                         'name' => $game['name'],
@@ -79,9 +79,18 @@ class CampaignsController extends Controller{
                         'team_b' => $game['team_b'],
                         'campaign_id'=>$aid,
                         'points'=>$game['points'],
+                        'game_start_date' => $game['game_start_date'],
+                        'game_start_time' => $game['game_start_time'],
+                        'game_end_date' => $game['game_end_date'],
+                        'game_end_time' => $game['game_end_time'],
+                        'team_b_image' => $team_b_image,
+                        'team_a_image' => $team_a_image,
+                        
                         );
             
                         $gid= DB::table('games')->insertGetId($data);
+
+                        $i=$i+1;
                 }}
               
             }
@@ -144,7 +153,7 @@ class CampaignsController extends Controller{
             $games = DB::table('games')
                 ->where('campaign_id', '=', $campaign->id)
                 ->where('deleted', '=', 0)
-                ->select('id', 'name', 'team_a', 'team_b','points','selected_winner')
+                ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_date','team_a_image','team_b_image')
                 ->get();
 
 
@@ -164,6 +173,18 @@ class CampaignsController extends Controller{
             // return $request->hasFile('homeTeamLogo')
             $image = $request->file('image')->store('images', 'public');
             $image = 'storage/'.$image;
+        }
+        $team_a_image=null;
+        $team_b_image=null;
+        if ($request->hasFile('team_a_image')) {
+            // return $request->hasFile('homeTeamLogo')
+            $team_a_image = $request->file('team_a_image')->store('images', 'public');
+            $team_a_image = 'storage/'.$team_a_image;
+        }
+        if ($request->hasFile('team_b_image')) {
+            // return $request->hasFile('homeTeamLogo')
+            $team_b_image = $request->file('team_b_image')->store('images', 'public');
+            $team_b_image = 'storage/'.$team_b_image;
         }
         $update_data=DB::table('campaigns')
         ->where('id','=',$request->id)
@@ -200,6 +221,12 @@ class CampaignsController extends Controller{
                     'team_b' => $game['team_b'],
                     'campaign_id'=>$request->id,
                     'points'=>$game['points'],
+                    'game_start_date' => $game['game_start_date'],
+                    'game_start_time' => $game['game_start_time'],
+                    'game_end_date' => $game['game_end_date'],
+                    'game_end_time' => $game['game_end_time'],
+                    'team_b_image' => $game['team_b_image'],
+                    'team_a_image' => $game['team_a_image'],
                     );
         
                     $gid= DB::table('games')->insertGetId($data);}
@@ -214,6 +241,12 @@ class CampaignsController extends Controller{
                         'team_b' => $game['team_b'],
                         'deleted' => 0,
                         'points'=>$game['points'],
+                        'game_start_date' => $game['game_start_date'],
+                        'game_start_time' => $game['game_start_time'],
+                        'game_end_date' => $game['game_end_date'],
+                        'game_end_time' => $game['game_end_time'],
+                        'team_b_image' => $game['team_b_image'],
+                        'team_a_image' => $game['team_a_image'],
                     ]);
                 }
 
@@ -272,7 +305,7 @@ class CampaignsController extends Controller{
             $games = DB::table('games')
                 ->where('campaign_id', '=', $campaign->id)
                 ->where('deleted', '=', 0)
-                ->select('id', 'name', 'team_a', 'team_b')
+                ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_date','team_a_image','team_b_image')
                 ->get();
 
                 $participants = DB::table('users as u')

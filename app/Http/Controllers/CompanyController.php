@@ -89,7 +89,7 @@ class CompanyController extends Controller{
         $image=null;
         if ($request->hasFile('image')) {
             $image = $request->file('image')->store('images', 'public');
-            $image = 'storage/'.$image;
+            $image = 'storage/app/public/images/'.$image;
         }
       
         $update_data=DB::table('company')
@@ -110,8 +110,9 @@ class CompanyController extends Controller{
             'industry_sector' => $request->industry_sector,
             'revenue' => $request->revenue,
             'employees' => $request->employees,
+            'image'=>$image
         ]);
-
+        
         if($update_data){
             $data = array('status' => true, 'msg' => 'Company details updated successfully');
             return response()->json($data);
