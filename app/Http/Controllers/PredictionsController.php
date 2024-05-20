@@ -82,7 +82,7 @@ class PredictionsController extends Controller{
         $games = DB::table('games')
             ->where('campaign_id', '=', $campaign->id)
             ->where('deleted', '=', 0)
-            ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_date','team_a_image','team_b_image')
+            ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_date','game_end_time','team_a_image','team_b_image')
             ->get();
         // return $games;
        
