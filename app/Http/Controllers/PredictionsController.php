@@ -64,7 +64,7 @@ class PredictionsController extends Controller{
         $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
         $campaign_data= DB::table('campaigns')
         ->where('company_id', '=',  $request['logged_company'])
-        ->where('end_date', '<',  $currentDateTime)
+        ->where('end_date', '>=',  $currentDateTime)
         ->first();
         // return $campaign_data->id;
         if($campaign_data){
