@@ -165,7 +165,7 @@ class PredictionsController extends Controller{
     $campaign->total_points = $totalCampaignPoints;
             
             if($games!=null){
-                return $games[0]->team_a;
+                // return $games[0]->team_a;
         $teamASelections = $participants->where('team_name', '=', $games[0]->team_a)->count();
         $teamBSelections = $participants->where('team_name', '=', $games[0]->team_b)->count();
         // return $teamASelections;
@@ -178,13 +178,15 @@ class PredictionsController extends Controller{
         // Assign percentages to game object
         $games[0]->team_a_percentage = $teamAPercentage;
         $games[0]->team_a_selections = $teamASelections;
-
+                return   $games[0]->team_a_percentage;
 
         $games[0]->team_b_percentage = $teamBPercentage;
         $games[0]->team_b_selections = $teamBSelections;
 
         // Add games to the campaign object
-        $campaign->games = $games;}
+        $campaign->games = $games;
+
+    }
         $campaign->participants = $participants;
     }
         $campaign->self = $participant_self;
