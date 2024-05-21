@@ -66,7 +66,7 @@ class PredictionsController extends Controller{
         ->where('company_id', '=',  $request['logged_company'])
         ->where('end_date', '>=',  $currentDateTime)
         ->first();
-        // return $campaign_data->id;
+        return $campaign_data->id;
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
