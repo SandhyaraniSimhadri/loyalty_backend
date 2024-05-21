@@ -63,10 +63,11 @@ class PredictionsController extends Controller{
         // Fetch campaigns
         $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
         $campaign_data= DB::table('campaigns')
+        ->where('deleted', '=', 0)
         ->where('company_id', '=',  $request['logged_company'])
         ->where('end_date', '>=',  $currentDateTime)
         ->first();
-        // return $campaign_data->id;
+        return $campaign_data->id;
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
@@ -84,23 +85,6 @@ class PredictionsController extends Controller{
             ->where('deleted', '=', 0)
             ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_time','team_a_image','team_b_image')
             ->get();
-        // return $games;
-       
-        // return ;
-
-   
-            // $participants = DB::table('users as u')
-            // ->leftJoin('campaign_participants as c', 'u.id', '=', 'c.user_id')
-            // ->where('u.company_id', '=', $campaign->company_id)
-            // ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-            // ->where(function ($query) use ($campaign) {
-            //     $query->where('c.campaign_id', '=', $campaign->id)
-            //           ->orWhereNull('c.campaign_id'); // Include records where campaign_id is null
-            // })
-            // ->where('u.deleted', '=', 0)
-            // ->select('u.id', 'u.user_name','u.avatar', 'c.team_name','c.team_image', 'c.campaign_id', 'u.company_id') // Include campaign_id
-            // ->get();
-
 
        
             $subquery = DB::table('campaign_participants as c')
