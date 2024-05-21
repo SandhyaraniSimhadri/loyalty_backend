@@ -77,8 +77,6 @@ class PredictionsController extends Controller{
         ->orderBy('cam.created_at', 'DESC')
         ->get();
         $campaign=$campaigns[0];
-        // return $campaigns;
-
     // Fetch games associated with each campaign
     if($campaign->event_title=="PREDICTION EVENT"){
         $games = DB::table('games')
@@ -86,7 +84,25 @@ class PredictionsController extends Controller{
             ->where('deleted', '=', 0)
             ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_time','team_a_image','team_b_image')
             ->get();
-       return $games;
+        // return $games;
+       
+        // return ;
+
+   
+            // $participants = DB::table('users as u')
+            // ->leftJoin('campaign_participants as c', 'u.id', '=', 'c.user_id')
+            // ->where('u.company_id', '=', $campaign->company_id)
+            // ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+            // ->where(function ($query) use ($campaign) {
+            //     $query->where('c.campaign_id', '=', $campaign->id)
+            //           ->orWhereNull('c.campaign_id'); // Include records where campaign_id is null
+            // })
+            // ->where('u.deleted', '=', 0)
+            // ->select('u.id', 'u.user_name','u.avatar', 'c.team_name','c.team_image', 'c.campaign_id', 'u.company_id') // Include campaign_id
+            // ->get();
+
+
+       
             $subquery = DB::table('campaign_participants as c')
             ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
             ->groupBy('c.user_id');
