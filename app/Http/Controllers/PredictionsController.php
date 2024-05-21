@@ -77,6 +77,8 @@ class PredictionsController extends Controller{
         ->orderBy('cam.created_at', 'DESC')
         ->get();
         $campaign=$campaigns[0];
+        return $campaigns;
+
     // Fetch games associated with each campaign
     if($campaign->event_title=="PREDICTION EVENT"){
         $games = DB::table('games')
