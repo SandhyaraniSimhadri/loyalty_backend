@@ -178,7 +178,7 @@ class PredictionsController extends Controller{
         // Assign percentages to game object
         $games[0]->team_a_percentage = $teamAPercentage;
         $games[0]->team_a_selections = $teamASelections;
-                return   $games[0]->team_a_percentage;
+                // return   $games[0]->team_a_percentage;
 
         $games[0]->team_b_percentage = $teamBPercentage;
         $games[0]->team_b_selections = $teamBSelections;
