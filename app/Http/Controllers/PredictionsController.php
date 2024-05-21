@@ -67,7 +67,7 @@ class PredictionsController extends Controller{
         ->where('company_id', '=',  $request['logged_company'])
         ->where('end_date', '>=',  $currentDateTime)
         ->first();
-        return $campaign_data->id;
+        // return $campaign_data->id;
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
@@ -78,6 +78,7 @@ class PredictionsController extends Controller{
         ->orderBy('cam.created_at', 'DESC')
         ->get();
         $campaign=$campaigns[0];
+        return $campaign;
     // Fetch games associated with each campaign
     if($campaign->event_title=="PREDICTION EVENT"){
         $games = DB::table('games')
