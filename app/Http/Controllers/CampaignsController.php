@@ -309,15 +309,31 @@ class CampaignsController extends Controller{
                 ->get();
 
                 $participants = DB::table('users as u')
-                ->leftJoin('campaign_participants as c', 'u.id', '=', 'c.user_id')
+                ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+                    $join->on('u.id', '=', 'c.user_id')
+                        ->where(function ($query) use ($campaign) {
+                            $query->where('c.campaign_id', '=', $campaign->id)
+                                  ->orWhereNull('c.campaign_id');
+                        })
+                        ->where('c.deleted', '=', 0);
+                })
+                ->leftJoinSub($subquery, 'totals', function ($join) {
+                    $join->on('u.id', '=', 'totals.user_id');
+                })
+                ->where('c.campaign_id', '=', $campaign->id)
+                // ->orWhereNull('c.campaign_id')
                 ->where('u.company_id', '=', $campaign->company_id)
                 ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-                ->where(function ($query) use ($campaign) {
-                    $query->where('c.campaign_id', '=', $campaign->id)
-                          ->orWhereNull('c.campaign_id'); // Include records where campaign_id is null
-                })
                 ->where('u.deleted', '=', 0)
-                ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id', 'u.company_id') // Include campaign_id
+                ->select(
+                    'u.id as user_id', 
+                    'u.user_name', 
+                    'u.avatar', 
+                    'u.company_id', 
+                    DB::raw('MAX(c.team_name) as team_name'), // Selects one team_name
+                    'totals.total_points'
+                )
+                ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
                 ->get();
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
