@@ -319,7 +319,16 @@ class CampaignsController extends Controller{
                 ->where('u.deleted', '=', 0)
                 ->select('u.id', 'u.user_name', 'c.team_name', 'c.campaign_id', 'u.company_id') // Include campaign_id
                 ->get();
-
+                $totalCampaignPoints = DB::table('campaign_participants as c')
+                ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+                ->where('c.campaign_id', '=', $campaign->id)
+                ->where('u.deleted', '=', 0)
+                ->where('c.deleted', '=', 0)
+                ->sum('c.points');
+            
+                $campaign->total_points = $totalCampaignPoints;
     
             // Add games to the campaign object
             $campaign->games = $games;
