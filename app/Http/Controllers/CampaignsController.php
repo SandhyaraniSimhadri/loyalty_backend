@@ -307,7 +307,9 @@ class CampaignsController extends Controller{
                 ->where('deleted', '=', 0)
                 ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_time','team_a_image','team_b_image')
                 ->get();
-
+                $subquery = DB::table('campaign_participants as c')
+                ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
+                ->groupBy('c.user_id');
                 $participants = DB::table('users as u')
                 ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
                     $join->on('u.id', '=', 'c.user_id')
