@@ -164,7 +164,15 @@ class UsersModuleController extends Controller{
         $company_info = DB::table('company as c')
         ->where('c.company_name','=',$user['company_name']) 
         ->first();
-   
+
+        $user_info=DB::table('users')
+        ->where('email','=',$user['email'])
+        ->first();
+        if($user_info){
+            continue;
+
+        }
+   else{
     if($company_info && $user['user_name'] && $user['email'] && $user['mobile_number'] && $user['city'])
     {
         // return true;
@@ -187,6 +195,7 @@ class UsersModuleController extends Controller{
             else{
                 continue;
             }
+        }
         }
                 return json_encode(array('status' => true, 'msg' => 'Users data uploaded successfully','count'=>$count));
             
