@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Imports\UsersImport;
+use App\Mail\Invitation;
 
 use App;
 use Response;
@@ -218,4 +219,36 @@ class UsersModuleController extends Controller{
     
         return Excel::download(new UsersReportExport($rows), 'reports' . '.csv');
     }
+    
+    public function send_invitation(Request $request){
+        $date = date('Y-m-d H:i:s');
+        $update_data=DB::table('users')
+        ->where('id','=',$request->id)
+        ->update([
+            'is_email_sent' => 1,
+            'email_sent_on' => $date,
+        ]);
+        $user_data=DB::table('users')
+        ->where('id','=',$request->id)
+        ->first();
+        $data = [
+            'user_name' => $user_data->user_name,
+            'email' => $request->email,
+            'user_type' => $request->user_type,
+            'key'=> $password,
+            'church_name'=> $request->church_name,
+            'type'=>1
+        ];
+        if($update_data){
+            mail::to('sandhyasimhadri999@gmail.com')->send(new Invitation($data));
+            $data = array('status' => true, 'msg' => 'Invitation sent successfully','data'=>$date);
+            return response()->json($data);
+            } 
+        else {
+            // return true;
+            $data = array('status' => false, 'msg' => 'Failed');
+            return response()->json($data);
+        }
+    }
+
 }

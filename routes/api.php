@@ -56,12 +56,16 @@ Route::post('delete_campaign', 'CampaignsController@delete_campaign');
 Route::middleware('api_check')->get('get_campaigns', 'CampaignsController@get_campaigns');
 Route::post('users_file_import','UsersModuleController@users_file_import');
 Route::post('get_users_report', 'UsersModuleController@get_users_report');
+
 Route::post('select_winner', 'CampaignsController@select_winner');
 Route::get('points_for_participant', 'PredictionsController@points_for_participant');
 
 
 Route::middleware('api_check')->get('get_prediction_details', 'PredictionsController@get_prediction_details');
 Route::middleware('api_check')->post('add_prediction_winner', 'PredictionsController@add_prediction_winner');
+Route::post('send_invitation','UsersModuleController@send_invitation');
+
+
 });
 
 
