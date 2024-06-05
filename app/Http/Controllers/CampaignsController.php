@@ -323,11 +323,11 @@ class CampaignsController extends Controller{
                     $join->on('u.id', '=', 'totals.user_id');
                 })
                 ->where('c.campaign_id', '=', $campaign->id)
-                // ->orWhereNull('c.campaign_id')
+                ->orWhereNull('c.campaign_id')
                 ->where('u.company_id', '=', $campaign->company_id)
                 ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('u.deleted', '=', 0)
-                ->select(
+                ->select('c.campaign_id',
                     'u.id as user_id', 
                     'u.user_name', 
                     'u.avatar', 
@@ -335,8 +335,9 @@ class CampaignsController extends Controller{
                     DB::raw('MAX(c.team_name) as team_name'), // Selects one team_name
                     'totals.total_points'
                 )
-                ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
+                ->groupBy('u.id','c.campaign_id' ,'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
                 ->get();
+                // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
                 ->where('u.company_id', '=', $campaign->company_id)

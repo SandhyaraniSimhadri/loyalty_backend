@@ -24,8 +24,12 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::group(['middleware' => ['cors']], function () {
 Route::post('verify_user', 'UsersController@verify_user');
+Route::post('set_registration', 'UsersController@set_registration');
+
+
 
 Route::post('check_user', 'UsersController@check_user');
+Route::post('set_password', 'UsersController@set_password');
 
 Route::post('add_company', 'CompanyController@add_company');
 Route::post('get_single_company', 'CompanyController@get_single_company');
@@ -61,7 +65,7 @@ Route::post('select_winner', 'CampaignsController@select_winner');
 Route::get('points_for_participant', 'PredictionsController@points_for_participant');
 
 
-Route::middleware('api_check')->get('get_prediction_details', 'PredictionsController@get_prediction_details');
+Route::middleware('api_check')->post('get_prediction_details', 'PredictionsController@get_prediction_details');
 Route::middleware('api_check')->post('add_prediction_winner', 'PredictionsController@add_prediction_winner');
 Route::post('send_invitation','UsersModuleController@send_invitation');
 

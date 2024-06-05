@@ -62,12 +62,21 @@ class PredictionsController extends Controller{
     public function get_prediction_details(Request $request) {
         // Fetch campaigns
         $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
+        // return $request['campaign_id'];
         $campaign_data= DB::table('campaigns')
         ->where('deleted', '=', 0)
         ->where('company_id', '=',  $request['logged_company'])
         ->where('end_date', '>=',  $currentDateTime)
         ->first();
-        // return $campaign_data->id;
+        // return $campaign_data;
+        if($request['campaign_id']){
+            $campaign_data= DB::table('campaigns')
+            ->where('deleted', '=', 0)
+            ->where('id', '=',  $request['campaign_id'])
+            ->first();
+        }
+     
+        // return $campaign_data;
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
@@ -108,19 +117,20 @@ class PredictionsController extends Controller{
         $join->on('u.id', '=', 'totals.user_id');
     })
     ->where('c.campaign_id', '=', $campaign->id)
-    // ->orWhereNull('c.campaign_id')
+    ->orWhereNull('c.campaign_id')
     ->where('u.company_id', '=', $campaign->company_id)
     ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
     ->where('u.deleted', '=', 0)
     ->select(
         'u.id as user_id', 
+        'c.campaign_id',
         'u.user_name', 
         'u.avatar', 
         'u.company_id', 
         DB::raw('MAX(c.team_name) as team_name'), // Selects one team_name
         'totals.total_points'
     )
-    ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
+    ->groupBy('u.id','c.campaign_id' , 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
     ->get();
 
 

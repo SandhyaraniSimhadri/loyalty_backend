@@ -112,7 +112,7 @@ class UsersController extends Controller{
                 );
     
                 $gid= DB::table('users')->insertGetId($data);
-                $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$user_data);
+                $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$data);
                 return response()->json($data);
             }
         }
@@ -310,6 +310,43 @@ class UsersController extends Controller{
     
         }
 
+        public function set_password(Request $request)
+        {
+    
+            //validation
+            $this->validate($request, [
+                'email' => 'required',
+                'password' => 'required',
+                'confirm_password' => 'required'
+            ]);
+            $current_date_time = date('Y-m-d H:i:s');
+    
+            $email = $request->input('email');
+            $password = $request->input('password');
+            $confirm_password = $request->input('confirm_password');
+            $result = DB::table('users')
+                ->where('email', '=', $email)
+                ->first();
+                // $result=$result[0];
+                $md5_password = md5($request->input('confirm_password'));
+                // return $result->email;
+            if ($result) {
+            //    return "hii";
+                DB::table('users')
+                    ->where('email', $email)
+                    ->update([
+                        'password' =>$md5_password,
+                    ]);
+                $response = array('status' => true, 'msg' => 'Password changed successfully');
+                return json_encode($response);
+            } else {
+                $response = array('status' => false, 'msg' => 'Invalid data');
+                return json_encode($response);
+            }
+    
+        }
+        
+
         public function get_countries(Request $request)
         {
             $result = DB::table('countries')
@@ -339,9 +376,58 @@ class UsersController extends Controller{
 
             return response()->json(['status' => true, 'data' => $result]);
     }
-   
-
     
-}
+    public function  set_registration(Request $request)
+    {
+    //    dd($request);
+        $this->validate($request, [
+            'email' => 'required',
+        
+        ]);
+        $date = date('Y-m-d H:i:s');
+        $email = $request->input('email');
+        $campaign = DB::table('campaigns')
+        ->where('id','=',$request->campaign_id)
+        ->first();
     
-
+            $password = $request->input('password');
+            $confirm_password = $request->input('confirm_password');
+            $result = DB::table('users')
+                ->where('email', '=', $email)
+                ->first();
+                // $result=$result[0];
+                $md5_password = md5($request->input('confirm_password'));
+                // return $result->email;
+            if ($result) {
+            //    return "hii";
+                DB::table('users')
+                    ->where('email', $email)
+                    ->update([
+                        'user_name' => $request->input('user_name'),
+                        'user_type'=>3,
+                        'is_active'=>1,
+                        'password' =>$md5_password,
+                        'company_id'=>$campaign->company_id
+                    ]);
+                $response = array('status' => true, 'msg' => 'Information updated successfully');
+                return json_encode($response);
+        } else {
+            $token = Str::random(60);
+            $api_token = hash('sha256', $token);
+            $data = array(
+                'email' => $email,
+                'user_name' => $request->input('user_name'),
+                'password' => $md5_password,
+                'token' => $api_token,
+                'user_type'=>3,
+                'is_active'=>1,
+                'company_id'=>$campaign->company_id
+                );
+    
+                $gid= DB::table('users')->insertGetId($data);
+                $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$data);
+                return response()->json($data);
+            }
+        }
+    
+    }

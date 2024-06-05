@@ -233,10 +233,9 @@ class UsersModuleController extends Controller{
         ->first();
         $data = [
             'user_name' => $user_data->user_name,
-            'email' => $request->email,
-            'user_type' => $request->user_type,
-            'key'=> $password,
-            'church_name'=> $request->church_name,
+            'email' => $user_data->email,
+            'user_type' => $user_data->user_type,
+            'key'=> $user_data->password,
             'type'=>1
         ];
         if($update_data){
