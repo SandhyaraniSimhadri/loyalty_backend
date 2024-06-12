@@ -157,10 +157,11 @@ class UsersController extends Controller{
                     'last_login' => $date,
                     'token' => $api_token,
                 ]);
-                $user_data = DB::table('users')
-                ->where('email','=',$email)
-                ->where('password','=',$md5_password)
-                ->select('id','user_name','email','avatar','mobile_no','token','is_active','user_type')
+                $user_data = DB::table('users as u')
+                ->leftJoin('company as c','u.company_id','=','c.id')
+                ->where('u.email','=',$email)
+                ->where('u.password','=',$md5_password)
+                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id')
                 ->first();
                 $data = array('status' => true, 'msg' => 'Login successfull!','data'=>$user_data);
                 return response()->json($data);
@@ -174,11 +175,13 @@ class UsersController extends Controller{
                         'last_login' => $date,
                         'token' => $api_token,
                     ]);
-                    $user_data = DB::table('users')
-                    ->where('email','=',$email)
-                    ->where('password','=',$md5_password)
-                    ->select('id','user_name','email','avatar','mobile_no','token','is_active','user_type')
-                    ->first();
+                    $user_data = DB::table('users as u')
+                ->leftJoin('company as c','u.company_id','=','c.id')
+                ->where('u.email','=',$email)
+                ->where('u.password','=',$md5_password)
+                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id')
+                ->first();
+                return $user_data;
                     $data = array('status' => true, 'msg' => 'Login successfull!','data'=>$user_data);
                     return response()->json($data);
                 }
@@ -429,5 +432,96 @@ class UsersController extends Controller{
                 return response()->json($data);
             }
         }
+        public function update_user_info(REQUEST $request){
+            $image=null;
+            if ($request->hasFile('image')) {
+                // return $request->hasFile('homeTeamLogo')
+                $image = $request->file('image')->store('images', 'public');
+                $image = 'storage/'.$image;
+            }
+            if($request->name=='null'){
+                $request->name='';
+            }
+            $update_data=DB::table('users')
+            ->where('id','=',$request->id)
+            ->update([
+                'user_name' => $request->user_name,
+                'name' => $request->name,
+                'mobile_no' => $request->phone_number,
+                'email' => $request->email,
+                'avatar'=>$image
+                
+            ]);
+          
+         
+           
+            if($update_data ){
+                $data = array('status' => true, 'msg' => 'Details updated successfully');
+                return response()->json($data);
+                } 
+            else {
+                $data = array('status' => false, 'msg' => 'Failed');
+                return response()->json($data);
+            }
+        }
+        public function update_user_password(Request $request)
+        {
+            $current_date_time = date('Y-m-d H:i:s');
     
+            $new_password = $request->input('new_password');
+            $confirm_password = $request->input('confirm_password');
+            $old_password = md5($request->input('old_password'));
+            $result = DB::table('users')
+                ->where('email', '=', $request['logged_email'] )
+                ->where('password','=',$old_password)
+                ->first();
+            
+                $md5_password = md5($request->input('confirm_password'));
+               
+            if ($result) {
+            //    return "hii";
+                DB::table('users')
+                    ->where('email', '=', $request['logged_email'] )
+                    ->update([
+                        'password' =>$md5_password,
+                    ]);
+                $response = array('status' => true, 'msg' => 'Password changed successfully');
+                return json_encode($response);
+            } else {
+                $response = array('status' => false, 'msg' => 'Please enter correct old password');
+                return json_encode($response);
+            }
+    
+        }
+
+
+        public function update_social_media_account(Request $request)
+        {
+           
+          
+            $result = DB::table('users')
+                ->where('email', '=', $request['logged_email'] )
+                ->first();
+            if ($result) {
+            //    return "hii";
+                DB::table('users')
+                    ->where('email', '=', $request['logged_email'] )
+                    ->update([
+                        'twitter_url'=>$request['twitter_url'],
+                        'facebook_url'=>$request['facebook_url'],
+                        'google_url'=>$request['google_url'],
+                        'linkedin_url'=>$request['linkedin_url'],
+                        'instagram_url'=>$request['instagram_url'],
+                        'quora_url'=>$request['quora_url'],
+                    ]);
+                $response = array('status' => true, 'msg' => 'Details updated successfully');
+                return json_encode($response);
+            } else {
+                $response = array('status' => false, 'msg' => 'Something went wrong');
+                return json_encode($response);
+            }
+    
+        }
+
+        
     }
