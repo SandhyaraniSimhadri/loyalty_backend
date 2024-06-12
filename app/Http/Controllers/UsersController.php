@@ -161,7 +161,7 @@ class UsersController extends Controller{
                 ->leftJoin('company as c','u.company_id','=','c.id')
                 ->where('u.email','=',$email)
                 ->where('u.password','=',$md5_password)
-                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id')
+                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id','u.twitter_url','u.facebook_url','u.google_url','u.linkedin_url','u.instagram_url','u.quora_url')
                 ->first();
                 $data = array('status' => true, 'msg' => 'Login successfull!','data'=>$user_data);
                 return response()->json($data);
@@ -179,7 +179,7 @@ class UsersController extends Controller{
                 ->leftJoin('company as c','u.company_id','=','c.id')
                 ->where('u.email','=',$email)
                 ->where('u.password','=',$md5_password)
-                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id')
+                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id','u.twitter_url','u.facebook_url','u.google_url','u.linkedin_url','u.instagram_url','u.quora_url')
                 ->first();
                 return $user_data;
                     $data = array('status' => true, 'msg' => 'Login successfull!','data'=>$user_data);
