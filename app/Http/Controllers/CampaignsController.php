@@ -200,7 +200,7 @@ class CampaignsController extends Controller{
         
                 // Add games to the campaign object
                 $campaign->games = $games;}
-    
+                return $campaign->event_title;
                 if($campaign->event_title=='QUIZ'){
                     $quizzes = DB::table('quizzes')
                         ->where('campaign_id', '=', $campaign->id)
