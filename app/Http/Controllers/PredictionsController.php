@@ -35,7 +35,7 @@ class PredictionsController extends Controller{
                     'campaign_id' =>  $request->campaign_id,
                     'game_id' =>  $request->game_id,
 
-                    'team_name'=> $request->selected_winner
+                    'predicted_answer'=> $request->selected_winner
                     );
                     
             $pid= DB::table('campaign_participants')->insertGetId($data);
@@ -127,7 +127,7 @@ class PredictionsController extends Controller{
         'u.user_name', 
         'u.avatar', 
         'u.company_id', 
-        DB::raw('MAX(c.team_name) as team_name'), // Selects one team_name
+        DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
         'totals.total_points'
     )
     ->groupBy('u.id','c.campaign_id' , 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
@@ -155,7 +155,7 @@ class PredictionsController extends Controller{
             'u.user_name', 
             'u.avatar', 
             'u.company_id', 
-            DB::raw('MAX(c.team_name) as team_name'), // Selects one team_name
+            DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
             'totals.total_points'
         )
         ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
@@ -176,8 +176,8 @@ class PredictionsController extends Controller{
             
             if($games!=null){
                 // return $games[0]->team_a;
-        $teamASelections = $participants->where('team_name', '=', $games[0]->team_a)->count();
-        $teamBSelections = $participants->where('team_name', '=', $games[0]->team_b)->count();
+        $teamASelections = $participants->where('predicted_answer', '=', $games[0]->team_a)->count();
+        $teamBSelections = $participants->where('predicted_answer', '=', $games[0]->team_b)->count();
         // return $teamASelections;
 
         // Calculate percentage of selection for each team
@@ -244,7 +244,7 @@ class PredictionsController extends Controller{
                 // return $game->points;
             DB::table('campaign_participants')
                 ->where('deleted', '=', 0)
-                ->where('team_name','=', $game->selected_winner)
+                ->where('predicted_answer','=', $game->selected_winner)
                 ->where('campaign_id', $game->campaign_id)
                 ->where('game_id', $game->id)
                 ->update(['points' => $game->points]);}

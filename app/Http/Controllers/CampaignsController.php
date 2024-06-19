@@ -39,10 +39,11 @@ class CampaignsController extends Controller{
             'campaign_title' => $request->campaign_title,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
             'event_id' => $request->event_id,
-            'company_id'=> $request->company_id
+            'company_id'=> $request->company_id,
+            'duration'=> $request->duration,
+
+            
             );
 
             $aid= DB::table('campaigns')->insertGetId($data);
@@ -95,6 +96,34 @@ class CampaignsController extends Controller{
               
             }
 
+            if($event_value[0]->title=="QUIZ"){
+
+        
+                $questions = json_decode($request->questions, true);
+      
+
+                if($questions){
+                    $i=0;
+                foreach($questions as $question){
+                    $data = array(
+          
+                        'question' => $question['question'],
+                        'response_a' => $question['response_a'],
+                        'response_b' => $question['response_b'],
+                        'response_c' => $question['response_c'],
+                        'response_d' => $question['response_d'],
+                        'campaign_id'=>$aid,
+                        'points'=>$question['points'],
+                        );
+            
+                        $gid= DB::table('quizzes')->insertGetId($data);
+
+                        $i=$i+1;
+                }}
+              
+            }
+
+
         if ($aid) { 
                 $data = array('status' => true, 'msg' => 'Campaign added successfully');
                 return response()->json($data);
@@ -120,6 +149,7 @@ class CampaignsController extends Controller{
     
         // Fetch games associated with each campaign
         foreach ($campaigns as $campaign) {
+            if($campaign->event_title=='PREDICTION EVENT'){
             $games = DB::table('games')
                 ->where('campaign_id', '=', $campaign->id)
                 ->where('deleted', '=', 0)
@@ -127,7 +157,18 @@ class CampaignsController extends Controller{
                 ->get();
     
             // Add games to the campaign object
-            $campaign->games = $games;
+            $campaign->games = $games;}
+
+            if($campaign->event_title=='QUIZ'){
+                $quizzes = DB::table('quizzes')
+                    ->where('campaign_id', '=', $campaign->id)
+                    ->where('deleted', '=', 0)
+                    ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
+                    ->get();
+        
+              
+                $campaign->quizzes = $quizzes;}
+
         }
     
         return response()->json(['status' => true, 'data' => $campaigns]);
@@ -150,17 +191,26 @@ class CampaignsController extends Controller{
     
         // Fetch games associated with each campaign
         foreach ($campaigns as $campaign) {
-            $games = DB::table('games')
-                ->where('campaign_id', '=', $campaign->id)
-                ->where('deleted', '=', 0)
-                ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_time','team_a_image','team_b_image')
-                ->get();
-
-
+            if($campaign->event_title=='PREDICTION EVENT'){
+                $games = DB::table('games')
+                    ->where('campaign_id', '=', $campaign->id)
+                    ->where('deleted', '=', 0)
+                    ->select('id', 'name', 'team_a', 'team_b','points')
+                    ->get();
+        
+                // Add games to the campaign object
+                $campaign->games = $games;}
     
-            // Add games to the campaign object
-            $campaign->games = $games;
-     
+                if($campaign->event_title=='QUIZ'){
+                    $quizzes = DB::table('quizzes')
+                        ->where('campaign_id', '=', $campaign->id)
+                        ->where('deleted', '=', 0)
+                        ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
+                        ->get();
+            
+                    
+                    $campaign->quizzes = $quizzes;}
+    
 
         }
     
@@ -174,18 +224,11 @@ class CampaignsController extends Controller{
             $image = $request->file('image')->store('images', 'public');
             $image = 'storage/'.$image;
         }
-        $team_a_image=null;
-        $team_b_image=null;
-        if ($request->hasFile('team_a_image')) {
-            // return $request->hasFile('homeTeamLogo')
-            $team_a_image = $request->file('team_a_image')->store('images', 'public');
-            $team_a_image = 'storage/'.$team_a_image;
-        }
-        if ($request->hasFile('team_b_image')) {
-            // return $request->hasFile('homeTeamLogo')
-            $team_b_image = $request->file('team_b_image')->store('images', 'public');
-            $team_b_image = 'storage/'.$team_b_image;
-        }
+        $event_value = DB::table('events')
+        ->where('id','=',$request->event_id)
+        ->get();
+
+       
         $update_data=DB::table('campaigns')
         ->where('id','=',$request->id)
         ->update([
@@ -193,23 +236,55 @@ class CampaignsController extends Controller{
             'campaign_title' => $request->campaign_title,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'company_id'=> $request->company_id
+            'company_id'=> $request->company_id,
+            'duration'=>$request->duration
         ]);
-        $update_game=0;
-        $gid=0;
-        $event_value = DB::table('events')
-        ->where('id','=',$request->event_id)
-        ->get();
-        $update_game=DB::table('games')
+
+
+        if($event_value[0]->title=="PREDICTION EVENT"){
+            $team_a_image=null;
+            $team_b_image=null;
+            if ($request->hasFile('team_a_image')) {
+                // return $request->hasFile('homeTeamLogo')
+                $team_a_image = $request->file('team_a_image')->store('images', 'public');
+                $team_a_image = 'storage/'.$team_a_image;
+            }
+            if ($request->hasFile('team_b_image')) {
+                // return $request->hasFile('homeTeamLogo')
+                $team_b_image = $request->file('team_b_image')->store('images', 'public');
+                $team_b_image = 'storage/'.$team_b_image;
+            }
+        $update_details=0;
+        $update_id=0;
+   
+        $update_details=DB::table('games')
         ->where('campaign_id','=',$request->id)
         ->update([
             'deleted' => 1,
         ]);
-        if($event_value[0]->title=="PREDICTION EVENT"){
-            $games = json_decode($request->games, true);
-          
-            if($games){
+        $games = json_decode($request->games, true);
+        if($games){
             foreach($games as $game){
+
+                $team_a_image=null;
+                $team_b_image=null;
+              
+                if ($request->hasFile("team_a_image_{$i}")) {
+                    // return $request->hasFile('homeTeamLogo')
+                    $team_a_image = $request->file("team_b_image_{$i}")->store('images', 'public');
+                    $team_a_image = 'storage/'.$team_a_image;
+                }
+                else{
+                    $team_a_image=$request->team_a_image_{$i};
+                }
+                if ($request->hasFile("team_b_image_{$i}")) {
+                    // return $request->hasFile('homeTeamLogo')
+                    $team_b_image = $request->file("team_b_image_{$i}")->store('images', 'public');
+                    $team_b_image = 'storage/'.$team_b_image;
+                }
+                else{
+                    $team_b_image=$request->team_b_image_{$i};
+                }
                 // return $game;
                 
 
@@ -225,13 +300,13 @@ class CampaignsController extends Controller{
                     'game_start_time' => $game['game_start_time'],
                     'game_end_date' => $game['game_end_date'],
                     'game_end_time' => $game['game_end_time'],
-                    'team_b_image' => $game['team_b_image'],
-                    'team_a_image' => $game['team_a_image'],
+                    'team_b_image' => $team_b_image,
+                    'team_a_image' => $team_a_image,
                     );
         
-                    $gid= DB::table('games')->insertGetId($data);}
+                    $update_id= DB::table('games')->insertGetId($data);}
                 else{
-                    $update_game=DB::table('games')
+                    $update_details=DB::table('games')
                     ->where('id','=',$game['id'])
                     ->where('campaign_id','=',$request->id)
                     ->update([
@@ -245,15 +320,65 @@ class CampaignsController extends Controller{
                         'game_start_time' => $game['game_start_time'],
                         'game_end_date' => $game['game_end_date'],
                         'game_end_time' => $game['game_end_time'],
-                        'team_b_image' => $game['team_b_image'],
-                        'team_a_image' => $game['team_a_image'],
+                        'team_b_image' => $team_b_image,
+                    'team_a_image' => $team_a_image,
                     ]);
                 }
 
             }}
           
         }
-        if($update_data || $update_game || $gid){
+
+        if($event_value[0]->title=="QUIZ"){
+            $update_details=0;
+            $update_id=0;
+            $update_details=DB::table('quizzes')
+            ->where('campaign_id','=',$request->id)
+            ->update([
+                'deleted' => 1,
+            ]);
+            $questions = json_decode($request->questions, true);
+
+
+            if($questions){
+                foreach($questions as $question){
+                    // return $game;
+                    
+    
+                    if($question['id']==0){
+    
+                         $data = array(
+                            'question' => $question['question'],
+                            'response_a' => $question['response_a'],
+                            'response_b' => $question['response_b'],
+                            'response_c' => $question['response_c'],
+                            'response_d' => $question['response_d'],
+                            'campaign_id'=>$request->id,
+                            'points'=>$question['points'],
+                        );
+            
+                        $id= DB::table('quizzes')->insertGetId($data);}
+                    else{
+                        $update_details=DB::table('quizzes')
+                        ->where('id','=',$question['id'])
+                        ->where('campaign_id','=',$request->id)
+                        ->update([
+                            'question' => $question['question'],
+                            'response_a' => $question['response_a'],
+                            'response_b' => $question['response_b'],
+                            'response_c' => $question['response_c'],
+                            'response_d' => $question['response_d'],
+                            'campaign_id'=>$request->id,
+                            'points'=>$question['points'],
+                            'deleted' => 0,
+                        ]);
+                    }
+    
+                }}
+          
+                
+        }
+        if($update_data || $update_details || $update_id){
             $data = array('status' => true, 'msg' => 'Campaign details updated successfully');
             return response()->json($data);
             } 
@@ -274,6 +399,11 @@ class CampaignsController extends Controller{
             'deleted'=>1,
         ]);
         $deleted_participants=DB::table('campaign_participants')
+        ->where('campaign_id','=',$request->id)
+        ->update([
+            'deleted'=>1,
+        ]);
+        $deleted_participants=DB::table('quizzes')
         ->where('campaign_id','=',$request->id)
         ->update([
             'deleted'=>1,
@@ -332,7 +462,7 @@ class CampaignsController extends Controller{
                     'u.user_name', 
                     'u.avatar', 
                     'u.company_id', 
-                    DB::raw('MAX(c.team_name) as team_name'), // Selects one team_name
+                    DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
                     'totals.total_points'
                 )
                 ->groupBy('u.id','c.campaign_id' ,'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
@@ -353,6 +483,62 @@ class CampaignsController extends Controller{
             $campaign->games = $games;
             $campaign->participants = $participants;
         }
+
+
+        if($campaign->event_title=="QUIZ"){
+            $quizzes = DB::table('quizzes')
+                ->where('campaign_id', '=', $campaign->id)
+                ->where('deleted', '=', 0)
+                ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
+                ->get();
+                $subquery = DB::table('campaign_participants as c')
+                ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
+                ->groupBy('c.user_id');
+                $participants = DB::table('users as u')
+                ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+                    $join->on('u.id', '=', 'c.user_id')
+                        ->where(function ($query) use ($campaign) {
+                            $query->where('c.campaign_id', '=', $campaign->id)
+                                  ->orWhereNull('c.campaign_id');
+                        })
+                        ->where('c.deleted', '=', 0);
+                })
+                ->leftJoinSub($subquery, 'totals', function ($join) {
+                    $join->on('u.id', '=', 'totals.user_id');
+                })
+                ->where('c.campaign_id', '=', $campaign->id)
+                ->orWhereNull('c.campaign_id')
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+                ->where('u.deleted', '=', 0)
+                ->select('c.campaign_id',
+                    'u.id as user_id', 
+                    'u.user_name', 
+                    'u.avatar', 
+                    'u.company_id', 
+                    DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
+                    'totals.total_points'
+                )
+                ->groupBy('u.id','c.campaign_id' ,'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
+                ->get();
+                // return $participants;
+                $totalCampaignPoints = DB::table('campaign_participants as c')
+                ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+                ->where('c.campaign_id', '=', $campaign->id)
+                ->where('u.deleted', '=', 0)
+                ->where('c.deleted', '=', 0)
+                ->sum('c.points');
+            
+            $campaign->total_points = $totalCampaignPoints;
+    
+            // Add games to the campaign object
+            $campaign->quizzes = $quizzes;
+            $campaign->participants = $participants;
+        }
+
+
 
         
     
