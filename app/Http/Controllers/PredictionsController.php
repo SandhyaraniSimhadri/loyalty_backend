@@ -29,16 +29,33 @@ class PredictionsController extends Controller{
        
         // return $request;
         $date = date('Y-m-d H:i:s');
-     
+        $index = 0;
+        if($request->type==1){
+            foreach($request->game as $game)
         $data = array(
                     'user_id' => $request['logged_id'],
                     'campaign_id' =>  $request->campaign_id,
-                    'game_id' =>  $request->game_id,
-
-                    'predicted_answer'=> $request->selected_winner
+                    'game_id' =>  $game['id'],
+                    'predicted_answer'=> $request->selected_winners[$index]
                     );
-                    
+                
             $pid= DB::table('campaign_participants')->insertGetId($data);
+        }
+        if($request->type==2){
+            $index=0;
+            // return $request->quizzes;
+            foreach($request->quizzes as $quiz){
+            // return  $quiz['id'];
+        $data = array(
+                    'user_id' => $request['logged_id'],
+                    'campaign_id' =>  $request->campaign_id,
+                    'game_id' =>  $quiz['id'],
+                    'predicted_answer'=> $request->selected_winners[$index]
+                    );
+                
+            $pid= DB::table('campaign_participants')->insertGetId($data);
+            $index=$index+1;}
+        }
            
             // $updated_value = DB::table('campaign_participants')
             // ->where('campaign_id','=',$request->campaign_id)
@@ -49,7 +66,7 @@ class PredictionsController extends Controller{
       
 
         if ($pid) { 
-                $data = array('status' => true, 'msg' => 'Winner prediction added successfully');
+                $data = array('status' => true, 'msg' => 'Completed successfully');
                 return response()->json($data);
 
         } else {
@@ -88,50 +105,38 @@ class PredictionsController extends Controller{
         ->get();
 
         $campaign=$campaigns[0];
-        // return $campaign->id;
-    // Fetch games associated with each campaign
-    if($campaign->event_title=="PREDICTION EVENT"){
-        $games = DB::table('games')
-            ->where('campaign_id', '=', $campaign->id)
-            ->where('deleted', '=', 0)
-            ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_time','team_a_image','team_b_image')
-            ->get();
-            // return $games;
-
-       
-            $subquery = DB::table('campaign_participants as c')
-            ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
-            ->groupBy('c.user_id');
-
-        // Main query to join users with the aggregated points
+        $subquery = DB::table('campaign_participants as c')
+        ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
+        ->groupBy('c.user_id');
+     
         $participants = DB::table('users as u')
-    ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-        $join->on('u.id', '=', 'c.user_id')
-            ->where(function ($query) use ($campaign) {
-                $query->where('c.campaign_id', '=', $campaign->id)
-                      ->orWhereNull('c.campaign_id');
-            })
-            ->where('c.deleted', '=', 0);
-    })
-    ->leftJoinSub($subquery, 'totals', function ($join) {
-        $join->on('u.id', '=', 'totals.user_id');
-    })
-    ->where('c.campaign_id', '=', $campaign->id)
-    ->orWhereNull('c.campaign_id')
-    ->where('u.company_id', '=', $campaign->company_id)
-    ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-    ->where('u.deleted', '=', 0)
-    ->select(
-        'u.id as user_id', 
-        'c.campaign_id',
-        'u.user_name', 
-        'u.avatar', 
-        'u.company_id', 
-        DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
-        'totals.total_points'
-    )
-    ->groupBy('u.id','c.campaign_id' , 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
-    ->get();
+        ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+            $join->on('u.id', '=', 'c.user_id')
+                ->where(function ($query) use ($campaign) {
+                    $query->where('c.campaign_id', '=', $campaign->id)
+                        ->orWhereNull('c.campaign_id');
+                })
+                ->where('c.deleted', '=', 0);
+        })
+        ->leftJoinSub($subquery, 'totals', function ($join) {
+            $join->on('u.id', '=', 'totals.user_id');
+        })
+        ->where('c.campaign_id', '=', $campaign->id)
+        ->orWhereNull('c.campaign_id')
+        ->where('u.company_id', '=', $campaign->company_id)
+        ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+        ->where('u.deleted', '=', 0)
+        ->select(
+            'u.id as user_id', 
+            'c.campaign_id',
+            'u.user_name', 
+            'u.avatar', 
+            'u.company_id', 
+            DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
+            'totals.total_points'
+        )
+        ->groupBy('u.id','c.campaign_id' , 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
+        ->get();
 
 
 
@@ -148,57 +153,88 @@ class PredictionsController extends Controller{
         ->where('u.company_id', '=', $campaign->company_id)
         ->where('u.id', '=', $request->logged_id)
 
-        ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+        // ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
         ->where('u.deleted', '=', 0)
-        ->select(
+        ->select('c.game_id',
             'u.id as user_id', 
             'u.user_name', 
             'u.avatar', 
             'u.company_id', 
-            DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
+        'c.predicted_answer','c.campaign_id', // Selects one predicted_answer
             'totals.total_points'
         )
-        ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
-        ->first();
+        ->groupBy('u.id', 'c.game_id','c.campaign_id','u.user_name', 'u.avatar', 'u.company_id', 'c.predicted_answer','totals.total_points')
+        ->get();
 
 
 
         $totalCampaignPoints = DB::table('campaign_participants as c')
-    ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
-    ->where('u.company_id', '=', $campaign->company_id)
-    ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-    ->where('c.campaign_id', '=', $campaign->id)
-    ->where('u.deleted', '=', 0)
-    ->where('c.deleted', '=', 0)
-    ->sum('c.points');
+            ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+            ->where('u.company_id', '=', $campaign->company_id)
+            ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+            ->where('c.campaign_id', '=', $campaign->id)
+            ->where('u.deleted', '=', 0)
+            ->where('c.deleted', '=', 0)
+            ->sum('c.points');
 
-    $campaign->total_points = $totalCampaignPoints;
+        $campaign->total_points = $totalCampaignPoints;
+
+
+    if($campaign->event_title=="PREDICTION EVENT"){
+        $games = DB::table('games')
+            ->where('campaign_id', '=', $campaign->id)
+            ->where('deleted', '=', 0)
+            ->select('id', 'name', 'team_a', 'team_b','points','selected_winner','game_start_date','game_end_date','game_start_time','game_end_time','team_a_image','team_b_image')
+            ->get();
+            // return $games;
+
+       
+       
+
+        // Main query to join users with the aggregated points
+   
             
             if($games!=null){
                 // return $games[0]->team_a;
-        $teamASelections = $participants->where('predicted_answer', '=', $games[0]->team_a)->count();
-        $teamBSelections = $participants->where('predicted_answer', '=', $games[0]->team_b)->count();
-        // return $teamASelections;
+                $teamASelections = $participants->where('predicted_answer', '=', $games[0]->team_a)->count();
+                $teamBSelections = $participants->where('predicted_answer', '=', $games[0]->team_b)->count();
+                // return $teamASelections;
 
-        // Calculate percentage of selection for each team
-        $totalSelections = $teamASelections + $teamBSelections;
-        $teamAPercentage = $totalSelections > 0 ? ($teamASelections / $totalSelections) * 100 : 0;
-        $teamBPercentage = $totalSelections > 0 ? ($teamBSelections / $totalSelections) * 100 : 0;
+                // Calculate percentage of selection for each team
+                $totalSelections = $teamASelections + $teamBSelections;
+                $teamAPercentage = $totalSelections > 0 ? ($teamASelections / $totalSelections) * 100 : 0;
+                $teamBPercentage = $totalSelections > 0 ? ($teamBSelections / $totalSelections) * 100 : 0;
 
-        // Assign percentages to game object
-        $games[0]->team_a_percentage = $teamAPercentage;
-        $games[0]->team_a_selections = $teamASelections;
-                // return   $games[0]->team_a_percentage;
+                // Assign percentages to game object
+                $games[0]->team_a_percentage = $teamAPercentage;
+                $games[0]->team_a_selections = $teamASelections;
+                        // return   $games[0]->team_a_percentage;
 
-        $games[0]->team_b_percentage = $teamBPercentage;
-        $games[0]->team_b_selections = $teamBSelections;
+                $games[0]->team_b_percentage = $teamBPercentage;
+                $games[0]->team_b_selections = $teamBSelections;
+
+                // Add games to the campaign object
+                $campaign->games = $games;
+
+        }
+            $campaign->participants = $participants;
+    }
+    if($campaign->event_title=="QUIZ"){
+        // return "hiii";
+        $quizzes = DB::table('quizzes')
+            ->where('campaign_id', '=', $campaign->id)
+            ->where('deleted', '=', 0)
+            ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
+            ->get();
+           
+        
+        $campaign->total_points = $totalCampaignPoints;
 
         // Add games to the campaign object
-        $campaign->games = $games;
-
-    }
+        $campaign->quizzes = $quizzes;
         $campaign->participants = $participants;
     }
+
         $campaign->self = $participant_self;
 
 

@@ -89,7 +89,7 @@ class CompanyController extends Controller{
         $image=null;
         if ($request->hasFile('image')) {
             $image = $request->file('image')->store('images', 'public');
-            $image = 'storage/app/public/images/'.$image;
+            $image = 'storage/'.$image;
         }
       
         $update_data=DB::table('company')

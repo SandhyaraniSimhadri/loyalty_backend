@@ -132,6 +132,7 @@ class UsersController extends Controller{
         $md5_password = md5($request->input('password'));
         // return $email;
         // return $md5_password;
+        // return $email;
 
       
         $user_data = DB::table('users')
@@ -140,13 +141,23 @@ class UsersController extends Controller{
         ->select('is_active')
         ->get();
         // return $user_data;
+        // return $user_data;
+        // return $user_data;
         
         // return $user_data->is_active;
-        if($user_data){
-        $user_data=$user_data[0];
+        if(count($user_data) == 0){
+            // return "hiiii";
+          
+                $data = array('status' => false, 'msg' => 'Login Failed. Please enter correct credentials');
+                return response()->json($data);
             
         }
-        if ($user_data) { 
+        else{
+            // return "hello";
+
+            $user_data=$user_data[0];  
+       
+            // return $user_data;
             $token = Str::random(60);
             $api_token = hash('sha256', $token);
             if($user_data->is_active){
@@ -190,11 +201,7 @@ class UsersController extends Controller{
                 return response()->json($data); }
             }
 
-        } else {
-            // return true;
-            $data = array('status' => false, 'msg' => 'Login Failed. Please enter correct credentials');
-            return response()->json($data);
-        }
+        } 
 
     }
 

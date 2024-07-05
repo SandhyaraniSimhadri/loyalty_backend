@@ -112,6 +112,7 @@ class CampaignsController extends Controller{
                         'response_b' => $question['response_b'],
                         'response_c' => $question['response_c'],
                         'response_d' => $question['response_d'],
+                        'correct_answer' => $question['answer'],
                         'campaign_id'=>$aid,
                         'points'=>$question['points'],
                         );
@@ -353,6 +354,7 @@ class CampaignsController extends Controller{
                             'response_b' => $question['response_b'],
                             'response_c' => $question['response_c'],
                             'response_d' => $question['response_d'],
+                            'correct_answer' => $question['correct_answer'],
                             'campaign_id'=>$request->id,
                             'points'=>$question['points'],
                         );
@@ -368,6 +370,7 @@ class CampaignsController extends Controller{
                             'response_b' => $question['response_b'],
                             'response_c' => $question['response_c'],
                             'response_d' => $question['response_d'],
+                            'correct_answer' => $question['correct_answer'],
                             'campaign_id'=>$request->id,
                             'points'=>$question['points'],
                             'deleted' => 0,
