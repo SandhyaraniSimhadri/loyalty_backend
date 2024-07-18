@@ -42,18 +42,37 @@ class PredictionsController extends Controller{
             $pid= DB::table('campaign_participants')->insertGetId($data);
         }
         if($request->type==2){
+            
+            $data1 = array(
+                    'user_id' => $request['logged_id'],
+                    'campaign_id' =>  $request->campaign_id,
+                    'duration' =>  $request->duration,
+                    'time_taken'=> $request->time_taken
+                    );
+
+                    $ucid= DB::table('users_campaigns_timetaken')->insertGetId($data1);
             $index=0;
             // return $request->quizzes;
             foreach($request->quizzes as $quiz){
             // return  $quiz['id'];
+            $predicted_answer = isset($request->selected_winners[$index]) ? $request->selected_winners[$index] : "Notansweredtimeexceeded"; // or any default value
+            // return $request->points_calc;
+          
         $data = array(
                     'user_id' => $request['logged_id'],
                     'campaign_id' =>  $request->campaign_id,
                     'game_id' =>  $quiz['id'],
-                    'predicted_answer'=> $request->selected_winners[$index]
+                    'predicted_answer'=> $predicted_answer
                     );
                 
             $pid= DB::table('campaign_participants')->insertGetId($data);
+            if($request->points_calc=="true"){
+                DB::table('campaign_participants')
+                ->where('deleted', '=', 0)
+                ->where('predicted_answer','=',$predicted_answer)
+                ->where('campaign_id', $request->campaign_id)
+                ->where('game_id', $quiz['id'])
+                ->update(['points' => $quiz['points']]);}
             $index=$index+1;}
         }
            
@@ -79,21 +98,28 @@ class PredictionsController extends Controller{
     public function get_prediction_details(Request $request) {
         // Fetch campaigns
         $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
-        // return $request['campaign_id'];
-        $campaign_data= DB::table('campaigns')
-        ->where('deleted', '=', 0)
-        ->where('company_id', '=',  $request['logged_company'])
-        ->where('end_date', '>=',  $currentDateTime)
-        ->first();
-        // return $campaign_data;
+   $campaign_data = DB::table('campaigns as c')
+    ->leftJoin('users_campaigns_timetaken as uc', function($join) use ($request) {
+        $join->on('c.id', '=', 'uc.campaign_id')
+            ->where('uc.user_id', '=', $request['logged_id']);
+    })
+    ->where('c.deleted', '=', 0)
+    ->where('c.company_id', '=', $request['logged_company'])
+    ->where('c.end_date', '>=', now()) // Use Laravel's now() helper function for the current date and time
+    ->select(
+        'c.*',
+        'uc.time_taken'
+    )
+    ->first();
+    $campaign_data->total_time_taken=$campaign_data->time_taken;
+    // return $campaign_data->time_taken;
         if($request['campaign_id']){
             $campaign_data= DB::table('campaigns')
             ->where('deleted', '=', 0)
             ->where('id', '=',  $request['campaign_id'])
             ->first();
         }
-     
-        // return $campaign_data;
+
         if($campaign_data){
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
@@ -109,35 +135,74 @@ class PredictionsController extends Controller{
         ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
         ->groupBy('c.user_id');
      
-        $participants = DB::table('users as u')
-        ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-            $join->on('u.id', '=', 'c.user_id')
-                ->where(function ($query) use ($campaign) {
-                    $query->where('c.campaign_id', '=', $campaign->id)
-                        ->orWhereNull('c.campaign_id');
-                })
-                ->where('c.deleted', '=', 0);
-        })
-        ->leftJoinSub($subquery, 'totals', function ($join) {
-            $join->on('u.id', '=', 'totals.user_id');
-        })
-        ->where('c.campaign_id', '=', $campaign->id)
-        ->orWhereNull('c.campaign_id')
-        ->where('u.company_id', '=', $campaign->company_id)
-        ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-        ->where('u.deleted', '=', 0)
-        ->select(
-            'u.id as user_id', 
-            'c.campaign_id',
-            'u.user_name', 
-            'u.avatar', 
-            'u.company_id', 
-            DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
-            'totals.total_points'
-        )
-        ->groupBy('u.id','c.campaign_id' , 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
-        ->get();
+$participants = DB::table('users as u')
+    ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+        $join->on('u.id', '=', 'c.user_id')
+            ->where('c.campaign_id', '=', $campaign->id)
+            ->where('c.deleted', '=', 0);
+    })
+    ->leftJoin('users_campaigns_timetaken as cu', function($join) use ($campaign) {
+        $join->on('u.id', '=', 'cu.user_id')
+            ->where('cu.campaign_id', '=', $campaign->id)
+            ->where('cu.deleted', '=', 0);
+    })
+    ->leftJoinSub($subquery, 'totals', function ($join) {
+        $join->on('u.id', '=', 'totals.user_id');
+    })
+    ->where('u.company_id', '=', $campaign->company_id)
+    ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+    ->where('u.deleted', '=', 0)
+    ->select(
+        'u.id as user_id',
+        'c.campaign_id',
+        'u.user_name',
+        'u.avatar',
+        'u.company_id',
+        DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'),
+        'totals.total_points',
+        'cu.time_taken'
+    )
+    ->groupBy(
+        'u.id', 
+        'c.campaign_id', 
+        'u.user_name', 
+        'u.avatar', 
+        'u.company_id', 
+        'totals.total_points', 
+        'cu.time_taken'
+    )
+    ->orderBy('totals.total_points', 'desc')
+    ->orderBy('cu.time_taken', 'asc')
+    ->get();
+$currentUserId = $request['logged_id']; // Assume this is the current logged-in user's ID
+$currentRank = null;
 
+// Convert the collection to an array to get the rank and slice the array
+$participantsArray = $participants->toArray();
+
+// Find the rank of the current user
+foreach ($participantsArray as $index => $participant) {
+    if ($participant->user_id == $currentUserId) {
+        $currentRank = $index + 1; // Rank is index + 1 (1-based index)
+        break;
+    }
+}
+
+if ($currentRank !== null) {
+    $rangeStart = (int) (floor(($currentRank - 1) / 10) * 10) + 1;
+    $rangeEnd = $rangeStart + 9;
+
+    // Slice the array to get the desired range
+    $displayParticipants = array_slice($participantsArray, $rangeStart - 1, 10);
+} else {
+    // Handle case where the current user is not found
+    $displayParticipants = [];
+}
+
+// You can now use $displayParticipants to show the ranks
+
+$campaign->displayParticipants = $displayParticipants;
+    
 
 
         $participant_self = DB::table('users as u')
@@ -217,7 +282,7 @@ class PredictionsController extends Controller{
                 $campaign->games = $games;
 
         }
-            $campaign->participants = $participants;
+            $campaign->participants = $displayParticipants;
     }
     if($campaign->event_title=="QUIZ"){
         // return "hiii";
@@ -232,10 +297,11 @@ class PredictionsController extends Controller{
 
         // Add games to the campaign object
         $campaign->quizzes = $quizzes;
-        $campaign->participants = $participants;
+        $campaign->participants = $displayParticipants;
     }
 
         $campaign->self = $participant_self;
+        $campaign->time_taken=$campaign_data->time_taken;
 
 
     
@@ -265,12 +331,15 @@ class PredictionsController extends Controller{
     {
     
         $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i');
+        $currentDate = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
+
 
 
         $games = DB::table('games')
             ->where('deleted', '=', 0)
             ->select('*', DB::raw("CONCAT(game_end_date, ' ', game_end_time) as game_end_datetime"))
             ->get();
+        
 
             // return $games
         
@@ -285,6 +354,38 @@ class PredictionsController extends Controller{
                 ->where('game_id', $game->id)
                 ->update(['points' => $game->points]);}
         }
+
+
+
+        $campaigns = DB::table('campaigns')
+        ->where('event_id', '=', 2)
+        ->where('calc_points_immediately', '=', "false")
+        ->where('deleted', '=', 0)
+        ->select('*', DB::raw("CONCAT(start_date) as game_end_date"))
+        ->get();
+        // return $campaigns;
+        if(!$campaigns->isEmpty()){
+        foreach ($campaigns as $campaign) {
+            // return $campaign->id;
+            if($campaign->game_end_date<=$currentDate){
+                // return $game->points;
+            $quizzes=DB::table('quizzes')
+                ->where('deleted', '=', 0)
+                ->where('campaign_id', $campaign->id)
+                ->get();
+              }
+            //   return $quizzes;
+              foreach ($quizzes as $quiz){
+                // return $quiz->correct_answer;
+                DB::table('campaign_participants')
+                ->where('deleted', '=', 0)
+                ->where('predicted_answer','=', $quiz->correct_answer)
+                ->where('campaign_id', $campaign->id)
+                ->where('game_id', $quiz->id)
+                ->update(['points' => $quiz->points]);
+              }
+
+        }}
 }
     
 }

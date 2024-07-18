@@ -42,8 +42,7 @@ class CampaignsController extends Controller{
             'event_id' => $request->event_id,
             'company_id'=> $request->company_id,
             'duration'=> $request->duration,
-
-            
+            'calc_points_immediately'=>$request->calculatePoints
             );
 
             $aid= DB::table('campaigns')->insertGetId($data);
@@ -238,7 +237,8 @@ class CampaignsController extends Controller{
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'company_id'=> $request->company_id,
-            'duration'=>$request->duration
+            'duration'=>$request->duration,
+            'calc_points_immediately'=>$request->calculatePoints
         ]);
 
 
@@ -361,6 +361,7 @@ class CampaignsController extends Controller{
             
                         $id= DB::table('quizzes')->insertGetId($data);}
                     else{
+                        // return $question['correct_answer'];
                         $update_details=DB::table('quizzes')
                         ->where('id','=',$question['id'])
                         ->where('campaign_id','=',$request->id)
@@ -443,64 +444,6 @@ class CampaignsController extends Controller{
                 $subquery = DB::table('campaign_participants as c')
                 ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
                 ->groupBy('c.user_id');
-           $participants = DB::table('users as u')
-           ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-               $join->on('u.id', '=', 'c.user_id')
-                   ->where(function ($query) use ($campaign) {
-                       $query->where('c.campaign_id', '=', $campaign->id)
-                             ->orWhereNull('c.campaign_id');
-                   })
-                   ->where('c.deleted', '=', 0);
-           })
-           ->leftJoinSub($subquery, 'totals', function ($join) {
-               $join->on('u.id', '=', 'totals.user_id');
-           })
-           ->where(function ($query) use ($campaign) {
-               $query->where('c.campaign_id', '=', $campaign->id)
-                     ->orWhereNull('c.campaign_id');
-           })
-           ->where('u.company_id', '=', $campaign->company_id)
-           ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-           ->where('u.deleted', '=', 0)
-           ->select(
-               'c.campaign_id',
-               'u.id as user_id', 
-               'u.user_name', 
-               'u.avatar', 
-               'u.company_id', 
-               DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'), // Concatenate all predicted answers
-               'totals.total_points'
-           )
-           ->groupBy('u.id', 'c.campaign_id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
-           ->get();
-       
-                // return $participants;
-                $totalCampaignPoints = DB::table('campaign_participants as c')
-                ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-                ->where('c.campaign_id', '=', $campaign->id)
-                ->where('u.deleted', '=', 0)
-                ->where('c.deleted', '=', 0)
-                ->sum('c.points');
-            
-                $campaign->total_points = $totalCampaignPoints;
-    
-            // Add games to the campaign object
-            $campaign->games = $games;
-            $campaign->participants = $participants;
-        }
-
-
-        if($campaign->event_title=="QUIZ"){
-            $quizzes = DB::table('quizzes')
-                ->where('campaign_id', '=', $campaign->id)
-                ->where('deleted', '=', 0)
-                ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
-                ->get();
-                $subquery = DB::table('campaign_participants as c')
-                ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
-                ->groupBy('c.user_id');
                 $participants = DB::table('users as u')
                 ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
                     $join->on('u.id', '=', 'c.user_id')
@@ -528,6 +471,58 @@ class CampaignsController extends Controller{
                 )
                 ->groupBy('u.id','c.campaign_id' ,'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
                 ->get();
+                // return $participants;
+                $totalCampaignPoints = DB::table('campaign_participants as c')
+                ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+                ->where('c.campaign_id', '=', $campaign->id)
+                ->where('u.deleted', '=', 0)
+                ->where('c.deleted', '=', 0)
+                ->sum('c.points');
+            
+                $campaign->total_points = $totalCampaignPoints;
+    
+            // Add games to the campaign object
+            $campaign->games = $games;
+            $campaign->participants = $participants;
+        }
+
+
+        if($campaign->event_title=="QUIZ"){
+        //    return  $campaign->company_id;
+            $quizzes = DB::table('quizzes')
+                ->where('campaign_id', '=', $campaign->id)
+                ->where('deleted', '=', 0)
+                ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
+                ->get();
+                $subquery = DB::table('campaign_participants as c')
+                ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
+                ->groupBy('c.user_id');
+                $participants = DB::table('users as u')
+    ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+        $join->on('u.id', '=', 'c.user_id')
+            ->where('c.campaign_id', '=', $campaign->id)
+            ->where('c.deleted', '=', 0);
+    })
+    ->leftJoinSub($subquery, 'totals', function ($join) {
+        $join->on('u.id', '=', 'totals.user_id');
+    })
+    ->where('u.company_id', '=', $campaign->company_id)
+    ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+    ->where('u.deleted', '=', 0)
+    ->select(
+        'u.id as user_id', 
+        'u.user_name', 
+        'u.avatar', 
+        'u.company_id', 
+        'c.campaign_id',
+        DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'), // Concatenate all predicted answers
+        'totals.total_points'
+    )
+    ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'c.campaign_id', 'totals.total_points')
+    ->get();
+
                 // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
