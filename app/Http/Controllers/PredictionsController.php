@@ -129,82 +129,91 @@ class PredictionsController extends Controller{
         ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
         ->orderBy('cam.created_at', 'DESC')
         ->get();
-
-        $campaign=$campaigns[0];
-        $subquery = DB::table('campaign_participants as c')
-        ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
-        ->groupBy('c.user_id');
-     
-$participants = DB::table('users as u')
-    ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-        $join->on('u.id', '=', 'c.user_id')
-            ->where('c.campaign_id', '=', $campaign->id)
-            ->where('c.deleted', '=', 0);
-    })
-    ->leftJoin('users_campaigns_timetaken as cu', function($join) use ($campaign) {
-        $join->on('u.id', '=', 'cu.user_id')
-            ->where('cu.campaign_id', '=', $campaign->id)
-            ->where('cu.deleted', '=', 0);
-    })
-    ->leftJoinSub($subquery, 'totals', function ($join) {
-        $join->on('u.id', '=', 'totals.user_id');
-    })
-    ->where('u.company_id', '=', $campaign->company_id)
-    ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-    ->where('u.deleted', '=', 0)
-    ->select(
-        'u.id as user_id',
-        'c.campaign_id',
-        'u.user_name',
-        'u.avatar',
-        'u.company_id',
-        DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'),
-        'totals.total_points',
-        'cu.time_taken'
-    )
-    ->groupBy(
-        'u.id', 
-        'c.campaign_id', 
-        'u.user_name', 
-        'u.avatar', 
-        'u.company_id', 
-        'totals.total_points', 
-        'cu.time_taken'
-    )
-    ->orderBy('totals.total_points', 'desc')
-    ->orderBy('cu.time_taken', 'asc')
-    ->get();
-$currentUserId = $request['logged_id']; // Assume this is the current logged-in user's ID
-$currentRank = null;
-
-// Convert the collection to an array to get the rank and slice the array
-$participantsArray = $participants->toArray();
-
-// Find the rank of the current user
-foreach ($participantsArray as $index => $participant) {
-    if ($participant->user_id == $currentUserId) {
-        $currentRank = $index + 1; // Rank is index + 1 (1-based index)
-        break;
-    }
-}
-
-if ($currentRank !== null) {
-    $rangeStart = (int) (floor(($currentRank - 1) / 10) * 10) + 1;
-    $rangeEnd = $rangeStart + 9;
-
-    // Slice the array to get the desired range
-    $displayParticipants = array_slice($participantsArray, $rangeStart - 1, 10);
-} else {
-    // Handle case where the current user is not found
-    $displayParticipants = [];
-}
-
-// You can now use $displayParticipants to show the ranks
-
-$campaign->displayParticipants = $displayParticipants;
+        $campaign = $campaigns[0];
+        $currentUserId = $request->logged_id;
+        $offset = $request->input('offset', 0); // Default offset is 0
+        $limit = $request->input('limit', 10); // Default limit is 10
     
-
-
+        // Subquery to calculate total points
+        $subquery = DB::table('campaign_participants as c')
+            ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
+            ->groupBy('c.user_id');
+    
+        // Fetch all participants to determine ranks
+        $participants = DB::table('users as u')
+            ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+                $join->on('u.id', '=', 'c.user_id')
+                    ->where('c.campaign_id', '=', $campaign->id)
+                    ->where('c.deleted', '=', 0);
+            })
+            ->leftJoin('users_campaigns_timetaken as cu', function($join) use ($campaign) {
+                $join->on('u.id', '=', 'cu.user_id')
+                    ->where('cu.campaign_id', '=', $campaign->id)
+                    ->where('cu.deleted', '=', 0);
+            })
+            ->leftJoinSub($subquery, 'totals', function ($join) {
+                $join->on('u.id', '=', 'totals.user_id');
+            })
+            ->where('u.company_id', '=', $campaign->company_id)
+            ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+            ->where('u.deleted', '=', 0)
+            ->select(
+                'u.id as user_id',
+                'c.campaign_id',
+                'u.user_name',
+                'u.avatar',
+                'u.company_id',
+                DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'),
+                'totals.total_points',
+                'cu.time_taken'
+            )
+            ->groupBy(
+                'u.id', 
+                'c.campaign_id', 
+                'u.user_name', 
+                'u.avatar', 
+                'u.company_id', 
+                'totals.total_points', 
+                'cu.time_taken'
+            )
+            ->orderBy('totals.total_points', 'desc')
+            ->orderBy('cu.time_taken', 'asc')
+            ->get();
+    
+        // Convert collection to array without circular references
+        $participantsArray = $participants->map(function($participant) {
+            return [
+                'user_id' => $participant->user_id,
+                'campaign_id' => $participant->campaign_id,
+                'user_name' => $participant->user_name,
+                'avatar' => $participant->avatar,
+                'company_id' => $participant->company_id,
+                'predicted_answers' => $participant->predicted_answers,
+                'total_points' => $participant->total_points,
+                'time_taken' => $participant->time_taken,
+            ];
+        })->toArray();
+    
+        // Find the current user's rank
+        $currentRank = null;
+        foreach ($participantsArray as $index => $participant) {
+            if ($participant['user_id'] == $currentUserId) {
+                $currentRank = $index + 1; // Rank is index + 1 (1-based index)
+                break;
+            }
+        }
+    
+        // Handle case where the current user is not found
+        if ($currentRank === null) {
+            $currentRank = -1;
+        }
+    
+        // Slice the array for pagination
+        $slicedParticipants = array_slice($participantsArray, $offset, $limit);
+    
+        // Prepare the response
+    
+        $campaign->participants=$slicedParticipants;
         $participant_self = DB::table('users as u')
         ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
             $join->on('u.id', '=', 'c.user_id')
@@ -282,7 +291,7 @@ $campaign->displayParticipants = $displayParticipants;
                 $campaign->games = $games;
 
         }
-            $campaign->participants = $displayParticipants;
+            $campaign->participants = $participantsArray;
     }
     if($campaign->event_title=="QUIZ"){
         // return "hiii";
@@ -297,7 +306,7 @@ $campaign->displayParticipants = $displayParticipants;
 
         // Add games to the campaign object
         $campaign->quizzes = $quizzes;
-        $campaign->participants = $displayParticipants;
+        $campaign->participants = $participantsArray;
     }
 
         $campaign->self = $participant_self;
