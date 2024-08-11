@@ -130,17 +130,25 @@ class PredictionsController extends Controller{
         ->orderBy('cam.created_at', 'DESC')
         ->get();
         $campaign = $campaigns[0];
-        $currentUserId = $request->logged_id;
         $offset = $request->input('offset', 0); // Default offset is 0
         $limit = $request->input('limit', 10); // Default limit is 10
-    
+        
         // Subquery to calculate total points
         $subquery = DB::table('campaign_participants as c')
             ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
             ->groupBy('c.user_id');
-    
+        
         // Fetch all participants to determine ranks
         $participants = DB::table('users as u')
+            ->select(
+                'u.id as user_id',
+                'u.user_name',
+                'u.avatar',
+                'u.company_id',
+                DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'),
+                DB::raw('COALESCE(totals.total_points, 0) as total_points'),
+                DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
+            )
             ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
                 $join->on('u.id', '=', 'c.user_id')
                     ->where('c.campaign_id', '=', $campaign->id)
@@ -157,34 +165,24 @@ class PredictionsController extends Controller{
             ->where('u.company_id', '=', $campaign->company_id)
             ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
             ->where('u.deleted', '=', 0)
-            ->select(
-                'u.id as user_id',
-                'c.campaign_id',
+            ->groupBy(
+                'u.id',
                 'u.user_name',
                 'u.avatar',
                 'u.company_id',
-                DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'),
                 'totals.total_points',
                 'cu.time_taken'
             )
-            ->groupBy(
-                'u.id', 
-                'c.campaign_id', 
-                'u.user_name', 
-                'u.avatar', 
-                'u.company_id', 
-                'totals.total_points', 
-                'cu.time_taken'
-            )
-            ->orderBy('totals.total_points', 'desc')
-            ->orderBy('cu.time_taken', 'asc')
+            ->orderBy('total_points', 'desc')
+            ->orderBy('time_taken', 'asc')
+            ->distinct('u.id')
             ->get();
-    
-        // Convert collection to array without circular references
-        $participantsArray = $participants->map(function($participant) {
+        
+        // Convert collection to array without circular references and add ranks
+        $participantsArray = $participants->map(function($participant, $index) use ($offset) {
             return [
+                'rank' => $index + 1 + $offset, // Rank starts from 1 and considers offset
                 'user_id' => $participant->user_id,
-                'campaign_id' => $participant->campaign_id,
                 'user_name' => $participant->user_name,
                 'avatar' => $participant->avatar,
                 'company_id' => $participant->company_id,
@@ -193,27 +191,14 @@ class PredictionsController extends Controller{
                 'time_taken' => $participant->time_taken,
             ];
         })->toArray();
-    
-        // Find the current user's rank
-        $currentRank = null;
-        foreach ($participantsArray as $index => $participant) {
-            if ($participant['user_id'] == $currentUserId) {
-                $currentRank = $index + 1; // Rank is index + 1 (1-based index)
-                break;
-            }
-        }
-    
-        // Handle case where the current user is not found
-        if ($currentRank === null) {
-            $currentRank = -1;
-        }
-    
+        
         // Slice the array for pagination
-        $slicedParticipants = array_slice($participantsArray, $offset, $limit);
-    
+        $slicedParticipants = array_slice($participantsArray, 0, $limit);
+        
         // Prepare the response
-    
-        $campaign->participants=$slicedParticipants;
+        $campaign->participants = $slicedParticipants;
+        
+        
         $participant_self = DB::table('users as u')
         ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
             $join->on('u.id', '=', 'c.user_id')

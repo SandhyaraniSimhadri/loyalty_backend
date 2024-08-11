@@ -463,7 +463,7 @@ class UsersController extends Controller{
          
            
             if($update_data ){
-                $data = array('status' => true, 'msg' => 'Details updated successfully');
+                $data = array('status' => true,'data'=>$image, 'msg' => 'Details updated successfully');
                 return response()->json($data);
                 } 
             else {
