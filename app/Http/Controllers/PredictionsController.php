@@ -138,8 +138,7 @@ class PredictionsController extends Controller{
             ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
             ->groupBy('c.user_id');
         
-        // Fetch all participants to determine ranks
-        $participants = DB::table('users as u')
+            $participants = DB::table('users as u')
             ->select(
                 'u.id as user_id',
                 'u.user_name',
@@ -181,7 +180,7 @@ class PredictionsController extends Controller{
         // Convert collection to array without circular references and add ranks
         $participantsArray = $participants->map(function($participant, $index) use ($offset) {
             return [
-                'rank' => $index + 1 + $offset, // Rank starts from 1 and considers offset
+                'rank' => $index + 1 + $offset, 
                 'user_id' => $participant->user_id,
                 'user_name' => $participant->user_name,
                 'avatar' => $participant->avatar,
@@ -197,7 +196,6 @@ class PredictionsController extends Controller{
         
         // Prepare the response
         $campaign->participants = $slicedParticipants;
-        
         
         $participant_self = DB::table('users as u')
         ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
@@ -225,7 +223,10 @@ class PredictionsController extends Controller{
         ->groupBy('u.id', 'c.game_id','c.campaign_id','u.user_name', 'u.avatar', 'u.company_id', 'c.predicted_answer','totals.total_points')
         ->get();
 
-
+        $participant_self = $participant_self->map(function($self) use ($participantsArray) {
+            $self->rank = array_search($self->user_id, array_column($participantsArray, 'user_id')) + 1;
+            return $self;
+        });
 
         $totalCampaignPoints = DB::table('campaign_participants as c')
             ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
