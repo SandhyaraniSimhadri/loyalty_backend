@@ -142,43 +142,21 @@ class PredictionsController extends Controller{
             ->groupBy('c.user_id');
         
             $participants = DB::table('users as u')
+            ->leftJoin('predictions as c', 'u.id', '=', 'c.user_id')
+            ->leftJoin('totals as totals', 'u.id', '=', 'totals.user_id')
+            ->leftJoin('company_users as cu', 'u.id', '=', 'cu.user_id')
             ->select(
                 'u.id as user_id',
                 'u.user_name',
                 'u.avatar',
                 'u.company_id',
-                DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'),
+                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.question_id SEPARATOR ",") as predicted_answers'),
                 DB::raw('COALESCE(totals.total_points, 0) as total_points'),
                 DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
             )
-            ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-                $join->on('u.id', '=', 'c.user_id')
-                    ->where('c.campaign_id', '=', $campaign->id)
-                    ->where('c.deleted', '=', 0);
-            })
-            ->leftJoin('users_campaigns_timetaken as cu', function($join) use ($campaign) {
-                $join->on('u.id', '=', 'cu.user_id')
-                    ->where('cu.campaign_id', '=', $campaign->id)
-                    ->where('cu.deleted', '=', 0);
-            })
-            ->leftJoinSub($subquery, 'totals', function ($join) {
-                $join->on('u.id', '=', 'totals.user_id');
-            })
-            ->where('u.company_id', '=', $campaign->company_id)
-            ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-            ->where('u.deleted', '=', 0)
-            ->groupBy(
-                'u.id',
-                'u.user_name',
-                'u.avatar',
-                'u.company_id',
-                'totals.total_points',
-                'cu.time_taken'
-            )
-            ->orderBy('total_points', 'desc')
-            ->orderBy('time_taken', 'asc')
-            ->distinct('u.id')
+            ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id')
             ->get();
+        
         
         // Convert collection to array without circular references and add ranks
         $participantsArray = $participants->map(function($participant, $index) use ($offset) {
