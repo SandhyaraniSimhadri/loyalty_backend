@@ -105,22 +105,25 @@ class PredictionsController extends Controller{
     })
     ->where('c.deleted', '=', 0)
     ->where('c.company_id', '=', $request['logged_company'])
-    ->where('c.end_date', '>=', now()) // Use Laravel's now() helper function for the current date and time
+    ->where('c.end_date', '>=', now()) 
     ->select(
         'c.*',
         'uc.time_taken'
     )
     ->first();
-    $campaign_data->total_time_taken=$campaign_data->time_taken;
-    // return $campaign_data->time_taken;
-        if($request['campaign_id']){
-            $campaign_data= DB::table('campaigns')
-            ->where('deleted', '=', 0)
-            ->where('id', '=',  $request['campaign_id'])
-            ->first();
-        }
+    // if(!$campaign_data!== null){
+       
+    // }
+        // if($request['campaign_id']){
+        //     $campaign_data= DB::table('campaigns')
+        //     ->where('deleted', '=', 0)
+        //     ->where('id', '=',  $request['campaign_id'])
+        //     ->first();
+        // }
 
         if($campaign_data){
+        $campaign_data->total_time_taken=$campaign_data->time_taken;
+
         $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
         ->where('cam.id','=',$campaign_data->id)

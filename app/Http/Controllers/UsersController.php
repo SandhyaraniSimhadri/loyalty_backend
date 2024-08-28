@@ -44,12 +44,11 @@ class UsersController extends Controller{
  
         $user_data = DB::table('users')
         ->where('email', '=', $email)
-        ->select('id', 'user_name', 'email', 'avatar', 'mobile_no', 'token', 'is_active', 'user_type')
+        ->select('id', 'user_name', 'email', 'avatar', 'mobile_no', 'token', 'is_active', 'user_type','login_times')
         ->first();
 
-        // return $user_data;
         $md5_password = md5('123456');
-        // return $user_data;
+       
         
     
         if ($user_data) { 
@@ -63,7 +62,8 @@ class UsersController extends Controller{
                 ->update([
                     'last_login' => $date,
                     'token' => $api_token,
-                    'password'=> $md5_password
+                    'password'=> $md5_password,
+                    'login_times'=>$user_data->login_times+1,
                 ]);
                 $user_data = DB::table('users')
                 ->where('email','=',$email)
@@ -82,7 +82,8 @@ class UsersController extends Controller{
                         'last_login' => $date,
                         'token' => $api_token,
                         'is_active'=> 1,
-                        'password'=> $md5_password
+                        'password'=> $md5_password,
+                        'login_times'=>$user_data->login_times+1,
                     ]);
                     $user_data = DB::table('users')
                     ->where('email','=',$email)
@@ -138,7 +139,7 @@ class UsersController extends Controller{
         $user_data = DB::table('users')
         ->where('email','=',$email)
         ->where('password','=',$md5_password)
-        ->select('is_active')
+        ->select('is_active','login_times')
         ->get();
         // return $user_data;
         // return $user_data;
@@ -154,7 +155,7 @@ class UsersController extends Controller{
         }
         else{
             // return "hello";
-
+            // return $user_data;
             $user_data=$user_data[0];  
        
             // return $user_data;
@@ -167,19 +168,15 @@ class UsersController extends Controller{
                 ->update([
                     'last_login' => $date,
                     'token' => $api_token,
+                    'login_times'=>$user_data->login_times+1,
                 ]);
                 $user_data = DB::table('users as u')
                 ->leftJoin('company as c','u.company_id','=','c.id')
                 ->where('u.email','=',$email)
                 ->where('u.password','=',$md5_password)
-                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id','u.twitter_url','u.facebook_url','u.google_url','u.linkedin_url','u.instagram_url','u.quora_url')
+                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id','u.twitter_url','u.facebook_url','u.google_url','u.linkedin_url','u.instagram_url','u.quora_url','u.login_times as first_time_login')
                 ->first();
-                if($request->input('password')=='123456'){
-                    $user_data->first_time_login='Yes';
-                }
-                else{
-                    $user_data->first_time_login='No';
-                }
+              
                 $data = array('status' => true, 'msg' => 'Login successfull!','data'=>$user_data);
                 return response()->json($data);
             }
@@ -191,12 +188,13 @@ class UsersController extends Controller{
                     ->update([
                         'last_login' => $date,
                         'token' => $api_token,
+                        'login_times'=>$user_data->login_times+1,
                     ]);
                     $user_data = DB::table('users as u')
                 ->leftJoin('company as c','u.company_id','=','c.id')
                 ->where('u.email','=',$email)
                 ->where('u.password','=',$md5_password)
-                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id','u.twitter_url','u.facebook_url','u.google_url','u.linkedin_url','u.instagram_url','u.quora_url')
+                ->select('u.id','u.user_name','u.name','u.email','u.avatar','u.mobile_no','u.token','u.is_active','u.user_type','c.company_name','u.company_id','u.twitter_url','u.facebook_url','u.google_url','u.linkedin_url','u.instagram_url','u.quora_url','u.login_times as first_time_login')
                 ->first();
                 if($request->input('password')=='123456'){
                     $user_data->first_time_login='Yes';
@@ -358,6 +356,7 @@ class UsersController extends Controller{
                     ->where('email', $email)
                     ->update([
                         'password' =>$md5_password,
+                        'login_times'=>$result->login_times+1,
                     ]);
                 $response = array('status' => true, 'msg' => 'Password changed successfully');
                 return json_encode($response);
