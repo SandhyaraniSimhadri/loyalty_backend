@@ -147,7 +147,7 @@ class PredictionsController extends Controller{
                 'u.user_name',
                 'u.avatar',
                 'u.company_id',
-                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),  // Ensure no duplicates in concatenation
+                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
                 DB::raw('COALESCE(totals.total_points, 0) as total_points'),
                 DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
             )
@@ -167,14 +167,7 @@ class PredictionsController extends Controller{
             ->where('u.company_id', '=', $campaign->company_id)
             ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
             ->where('u.deleted', '=', 0)
-            ->groupBy(
-                'u.id',
-                'u.user_name',
-                'u.avatar',
-                'u.company_id',
-                'totals.total_points',
-                'cu.time_taken'
-            )
+            ->groupBy('u.id')  // Group by user ID only
             ->orderBy('total_points', 'desc')
             ->orderBy('time_taken', 'asc')
             ->get();
