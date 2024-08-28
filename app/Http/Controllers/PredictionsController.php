@@ -167,7 +167,14 @@ class PredictionsController extends Controller{
             ->where('u.company_id', '=', $campaign->company_id)
             ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
             ->where('u.deleted', '=', 0)
-            ->groupBy('u.id')  // Group by user ID only
+            ->groupBy(
+                'u.id',
+                'u.user_name',        // Added to GROUP BY
+                'u.avatar',           // Added to GROUP BY
+                'u.company_id',       // Added to GROUP BY
+                'totals.total_points',// Added to GROUP BY
+                'cu.time_taken'       // Added to GROUP BY
+            )
             ->orderBy('total_points', 'desc')
             ->orderBy('time_taken', 'asc')
             ->get();
