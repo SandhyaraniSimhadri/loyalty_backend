@@ -147,7 +147,7 @@ class PredictionsController extends Controller{
                 'u.user_name',
                 'u.avatar',
                 'u.company_id',
-                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.question_id SEPARATOR ",") as predicted_answers'),  // Ensure no duplicates in concatenation
+                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),  // Ensure no duplicates in concatenation
                 DB::raw('COALESCE(totals.total_points, 0) as total_points'),
                 DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
             )
