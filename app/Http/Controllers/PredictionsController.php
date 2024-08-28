@@ -148,33 +148,24 @@ class PredictionsController extends Controller{
                 'u.avatar',
                 'u.company_id',
                 DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
-                DB::raw('COALESCE(totals.total_points, 0) as total_points'),
-                DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
+                DB::raw('COALESCE(SUM(totals.total_points), 0) as total_points'),
+                DB::raw('COALESCE(MIN(cu.time_taken), 0) as time_taken')
             )
             ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
                 $join->on('u.id', '=', 'c.user_id')
                      ->where('c.campaign_id', '=', $campaign->id)
                      ->where('c.deleted', '=', 0);
             })
-            ->leftJoin('users_campaigns_timetaken as cu', function($join) use ($campaign) {
-                $join->on('u.id', '=', 'cu.user_id')
-                     ->where('cu.campaign_id', '=', $campaign->id)
-                     ->where('cu.deleted', '=', 0);
-            })
-            ->leftJoinSub($subquery, 'totals', function ($join) {
+            ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), function($join) {
                 $join->on('u.id', '=', 'totals.user_id');
             })
+            ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), function($join) {
+                $join->on('u.id', '=', 'cu.user_id');
+            })
             ->where('u.company_id', '=', $campaign->company_id)
-            ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
+            ->where('u.company_id', '!=', 0)
             ->where('u.deleted', '=', 0)
-            ->groupBy(
-                'u.id',
-                'u.user_name',        // Added to GROUP BY
-                'u.avatar',           // Added to GROUP BY
-                'u.company_id',       // Added to GROUP BY
-                'totals.total_points',// Added to GROUP BY
-                'cu.time_taken'       // Added to GROUP BY
-            )
+            ->groupBy('u.id')  // Group only by user ID
             ->orderBy('total_points', 'desc')
             ->orderBy('time_taken', 'asc')
             ->get();
