@@ -170,6 +170,7 @@ class PredictionsController extends Controller{
             ->groupBy('u.id')  // Group only by user ID
             ->orderBy('total_points', 'desc')
             ->orderBy('time_taken', 'asc')
+            ->orderBy('u.created_at', 'asc')
             ->get();
         
         
