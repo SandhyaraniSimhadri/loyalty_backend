@@ -425,14 +425,17 @@ class CampaignsController extends Controller{
     }
     public function get_report(REQUEST $request){
 
-        $campaigns = DB::table('campaigns as cam')
-            ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
-            ->where('cam.id','=',$request->id)
-            ->where('e.deleted', '=', 0)
-            ->where('cam.deleted', '=', 0)
-            ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
-            ->orderBy('cam.created_at', 'DESC')
-            ->get();
+      
+            
+            $campaigns = DB::table('campaigns as cam')
+        ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
+        ->where('cam.id','=',$request->id)
+        ->where('e.deleted', '=', 0)
+        ->where('cam.deleted', '=', 0)
+        ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
+        ->orderBy('cam.created_at', 'DESC')
+        ->get();
+
             $campaign=$campaigns[0];
     
         if($campaign->event_title=="PREDICTION EVENT"){
@@ -497,31 +500,36 @@ class CampaignsController extends Controller{
                 ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
                 ->get();
                 $subquery = DB::table('campaign_participants as c')
-                ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
-                ->groupBy('c.user_id');
-                $participants = DB::table('users as u')
-    ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-        $join->on('u.id', '=', 'c.user_id')
-            ->where('c.campaign_id', '=', $campaign->id)
-            ->where('c.deleted', '=', 0);
-    })
-    ->leftJoinSub($subquery, 'totals', function ($join) {
-        $join->on('u.id', '=', 'totals.user_id');
-    })
-    ->where('u.company_id', '=', $campaign->company_id)
-    ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-    ->where('u.deleted', '=', 0)
-    ->select(
-        'u.id as user_id', 
-        'u.user_name', 
-        'u.avatar', 
-        'u.company_id', 
-        'c.campaign_id',
-        DB::raw('GROUP_CONCAT(c.predicted_answer) as predicted_answers'), // Concatenate all predicted answers
-        'totals.total_points'
-    )
-    ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'c.campaign_id', 'totals.total_points')
-    ->get();
+            ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
+            ->groupBy('c.user_id');
+            $participants = DB::table('users as u')
+            ->select(
+                'u.id as user_id',
+                'u.user_name',
+                'u.avatar',
+                'u.company_id',
+                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
+                DB::raw('COALESCE(SUM(totals.total_points), 0) as total_points'),
+                DB::raw('COALESCE(MIN(cu.time_taken), 0) as time_taken')
+            )
+            ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+                $join->on('u.id', '=', 'c.user_id')
+                     ->where('c.campaign_id', '=', $campaign->id)
+                     ->where('c.deleted', '=', 0);
+            })
+            ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), function($join) {
+                $join->on('u.id', '=', 'totals.user_id');
+            })
+            ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), function($join) {
+                $join->on('u.id', '=', 'cu.user_id');
+            })
+            ->where('u.company_id', '=', $campaign->company_id)
+            ->where('u.company_id', '!=', 0)
+            ->where('u.deleted', '=', 0)
+            ->groupBy('u.id')  // Group only by user ID
+            ->orderBy('total_points', 'desc')
+            ->orderBy('time_taken', 'asc')
+            ->get();
 
                 // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
