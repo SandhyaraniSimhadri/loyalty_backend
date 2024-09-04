@@ -7,7 +7,6 @@
         <p>Welcome to Loyalty.</p>
         <p>Please login through below link.</p>
         <?php
-        //   $registration_type =$mentor_user_name;
         $url = "http://16.16.79.221/login?type=" . urlencode($type) . "&email=" . urlencode($email) . "&user_name=" . urlencode($user_name);
         ?>
         <a href="<?php echo $url; ?>"><button type="submit" style="background-color: #3581ef;

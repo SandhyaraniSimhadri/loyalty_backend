@@ -448,23 +448,19 @@ class CampaignsController extends Controller{
                 ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
                 ->groupBy('c.user_id');
                 $participants = DB::table('users as u')
-                ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
+                ->join('campaign_participants as c', function($join) use ($campaign) {
                     $join->on('u.id', '=', 'c.user_id')
-                        ->where(function ($query) use ($campaign) {
-                            $query->where('c.campaign_id', '=', $campaign->id)
-                                  ->orWhereNull('c.campaign_id');
-                        })
+                        ->where('c.campaign_id', '=', $campaign->id)
                         ->where('c.deleted', '=', 0);
                 })
                 ->leftJoinSub($subquery, 'totals', function ($join) {
                     $join->on('u.id', '=', 'totals.user_id');
                 })
-                ->where('c.campaign_id', '=', $campaign->id)
-                ->orWhereNull('c.campaign_id')
                 ->where('u.company_id', '=', $campaign->company_id)
                 ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('u.deleted', '=', 0)
-                ->select('c.campaign_id',
+                ->select(
+                    'c.campaign_id',
                     'u.id as user_id', 
                     'u.user_name', 
                     'u.avatar', 
@@ -472,8 +468,9 @@ class CampaignsController extends Controller{
                     DB::raw('MAX(c.predicted_answer) as predicted_answer'), // Selects one predicted_answer
                     'totals.total_points'
                 )
-                ->groupBy('u.id','c.campaign_id' ,'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
+                ->groupBy('u.id', 'c.campaign_id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points')
                 ->get();
+            
                 // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
@@ -502,36 +499,30 @@ class CampaignsController extends Controller{
                 $subquery = DB::table('campaign_participants as c')
             ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
             ->groupBy('c.user_id');
-            $participants = DB::table('users as u')
-            ->select(
-                'u.id as user_id',
-                'u.user_name',
-                'u.avatar',
-                'u.company_id',
-                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
-                DB::raw('COALESCE(SUM(totals.total_points), 0) as total_points'),
-                DB::raw('COALESCE(MIN(cu.time_taken), 0) as time_taken')
-            )
-            ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-                $join->on('u.id', '=', 'c.user_id')
-                     ->where('c.campaign_id', '=', $campaign->id)
-                     ->where('c.deleted', '=', 0);
-            })
-            ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), function($join) {
-                $join->on('u.id', '=', 'totals.user_id');
-            })
-            ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), function($join) {
-                $join->on('u.id', '=', 'cu.user_id');
-            })
-            ->where('u.company_id', '=', $campaign->company_id)
-            ->where('u.company_id', '!=', 0)
-            ->where('u.deleted', '=', 0)
-            ->groupBy('u.id')  // Group only by user ID
-            ->orderBy('total_points', 'desc')
-            ->orderBy('time_taken', 'asc')
-            ->get();
 
-                // return $participants;
+
+            $participants = DB::table('users as u')
+                ->leftJoin(DB::raw('(SELECT user_id, GROUP_CONCAT(REPLACE(predicted_answer, "Notansweredtimeexceeded", "-") ORDER BY id SEPARATOR ",") as predicted_answers FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as c'), 'u.id', '=', 'c.user_id')
+                ->join(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
+                ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
+                ->select(
+                    'u.id as user_id',
+                    'u.user_name',
+                    'u.avatar',
+                    'u.company_id',
+                    DB::raw('COALESCE(c.predicted_answers, "") as predicted_answers'),
+                    DB::raw('COALESCE(totals.total_points, 0) as total_points'),
+                    DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
+                )
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0)
+                ->where('u.deleted', '=', 0)
+                ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken', 'c.predicted_answers')
+                ->orderBy('total_points', 'desc')
+                ->orderBy('time_taken', 'asc')
+                ->get();
+
+         // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
                 ->where('u.company_id', '=', $campaign->company_id)

@@ -66,13 +66,17 @@ class PredictionsController extends Controller{
                     );
                 
             $pid= DB::table('campaign_participants')->insertGetId($data);
+            $points=0;
+            if($quiz['correct_answer']==$predicted_answer){
+                $points=$quiz['points'];
+            }
             if($request->points_calc=="true"){
                 DB::table('campaign_participants')
                 ->where('deleted', '=', 0)
                 ->where('predicted_answer','=',$predicted_answer)
                 ->where('campaign_id', $request->campaign_id)
                 ->where('game_id', $quiz['id'])
-                ->update(['points' => $quiz['points']]);}
+                ->update(['points' => $points]);}
             $index=$index+1;}
         }
            
@@ -97,8 +101,8 @@ class PredictionsController extends Controller{
     }
     public function get_prediction_details(Request $request) {
         // Fetch campaigns
-        $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
-   $campaign_data = DB::table('campaigns as c')
+    $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
+    $campaign_data = DB::table('campaigns as c')
     ->leftJoin('users_campaigns_timetaken as uc', function($join) use ($request) {
         $join->on('c.id', '=', 'uc.campaign_id')
             ->where('uc.user_id', '=', $request['logged_id']);
@@ -111,17 +115,15 @@ class PredictionsController extends Controller{
         'uc.time_taken'
     )
     ->first();
-    // if(!$campaign_data!== null){
-       
-    // }
-        // if($request['campaign_id']){
-        //     $campaign_data= DB::table('campaigns')
-        //     ->where('deleted', '=', 0)
-        //     ->where('id', '=',  $request['campaign_id'])
-        //     ->first();
-        // }
-
+   
+  
         if($campaign_data){
+            $user_linked=DB::table('campaign_users')
+            ->where('user_id','=',$request['logged_id'])
+            ->where('campaign_id','=',$campaign_data->id)
+            ->where('deleted','=',0)
+            ->first();
+            if($user_linked){
         $campaign_data->total_time_taken=$campaign_data->time_taken;
 
         $campaigns = DB::table('campaigns as cam')
@@ -141,100 +143,111 @@ class PredictionsController extends Controller{
             ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
             ->groupBy('c.user_id');
         
-            $participants = DB::table('users as u')
-            ->select(
-                'u.id as user_id',
-                'u.user_name',
-                'u.avatar',
-                'u.company_id',
-                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
-                DB::raw('COALESCE(SUM(totals.total_points), 0) as total_points'),
-                DB::raw('COALESCE(MIN(cu.time_taken), 0) as time_taken')
-            )
+            $user_participation=DB::table('campaign_participants')
+            ->where('user_id','=',$request['logged_id'])
+            ->where('campaign_id','=',$campaign->id)
+            ->where('deleted','=',0)
+            ->first();
+
+            if($user_participation){
+                $participants = DB::table('users as u')
+                ->select(
+                    'u.id as user_id',
+                    'u.user_name',
+                    'u.avatar',
+                    'u.company_id',
+                    DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
+                    DB::raw('COALESCE(totals.total_points, 0) as total_points'),
+                    DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
+                )
+                ->join('campaign_participants as c', function($join) use ($campaign) {
+                    $join->on('u.id', '=', 'c.user_id')
+                         ->where('c.campaign_id', '=', $campaign->id)
+                         ->where('c.deleted', '=', 0);
+                })
+                ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
+                ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0)
+                ->where('u.deleted', '=', 0)
+                ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken') // Include totals and time_taken in groupBy
+                ->orderBy('total_points', 'desc')
+                ->orderBy('time_taken', 'asc')
+                ->orderBy('u.created_at', 'asc')
+                ->get();
+            
+            
+            // Convert collection to array without circular references and add ranks
+            $participantsArray = $participants->map(function($participant, $index) use ($offset) {
+                return [
+                    'rank' => $index + 1 + $offset, 
+                    'user_id' => $participant->user_id,
+                    'user_name' => $participant->user_name,
+                    'avatar' => $participant->avatar,
+                    'company_id' => $participant->company_id,
+                    'predicted_answers' => $participant->predicted_answers,
+                    'total_points' => $participant->total_points,
+                    'time_taken' => $participant->time_taken,
+                ];
+            })->toArray();
+            
+            // Slice the array for pagination
+            $slicedParticipants = array_slice($participantsArray, 0, $limit);
+            
+            // Prepare the response
+            $campaign->participants = $slicedParticipants;
+            $participant_self = DB::table('users as u')
             ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
                 $join->on('u.id', '=', 'c.user_id')
-                     ->where('c.campaign_id', '=', $campaign->id)
-                     ->where('c.deleted', '=', 0);
+                    ->where('c.campaign_id', '=', $campaign->id)
+                    ->where('c.deleted', '=', 0);
             })
-            ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), function($join) {
+            ->leftJoinSub($subquery, 'totals', function ($join) {
                 $join->on('u.id', '=', 'totals.user_id');
             })
-            ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), function($join) {
-                $join->on('u.id', '=', 'cu.user_id');
-            })
+            
             ->where('u.company_id', '=', $campaign->company_id)
-            ->where('u.company_id', '!=', 0)
+            ->where('u.id', '=', $request->logged_id)
+    
+            // ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
             ->where('u.deleted', '=', 0)
-            ->groupBy('u.id')  // Group only by user ID
-            ->orderBy('total_points', 'desc')
-            ->orderBy('time_taken', 'asc')
-            ->orderBy('u.created_at', 'asc')
+            ->select('c.game_id',
+                'u.id as user_id', 
+                'u.user_name', 
+                'u.avatar', 
+                'u.company_id', 
+            'c.predicted_answer','c.campaign_id', // Selects one predicted_answer
+                'totals.total_points'
+            )
+            ->groupBy('u.id', 'c.game_id','c.campaign_id','u.user_name', 'u.avatar', 'u.company_id', 'c.predicted_answer','totals.total_points')
             ->get();
-        
-        
-        // Convert collection to array without circular references and add ranks
-        $participantsArray = $participants->map(function($participant, $index) use ($offset) {
-            return [
-                'rank' => $index + 1 + $offset, 
-                'user_id' => $participant->user_id,
-                'user_name' => $participant->user_name,
-                'avatar' => $participant->avatar,
-                'company_id' => $participant->company_id,
-                'predicted_answers' => $participant->predicted_answers,
-                'total_points' => $participant->total_points,
-                'time_taken' => $participant->time_taken,
-            ];
-        })->toArray();
-        
-        // Slice the array for pagination
-        $slicedParticipants = array_slice($participantsArray, 0, $limit);
-        
-        // Prepare the response
-        $campaign->participants = $slicedParticipants;
-        
-        $participant_self = DB::table('users as u')
-        ->leftJoin('campaign_participants as c', function($join) use ($campaign) {
-            $join->on('u.id', '=', 'c.user_id')
+    
+            $participant_self = $participant_self->map(function($self) use ($participantsArray) {
+                $self->rank = array_search($self->user_id, array_column($participantsArray, 'user_id')) + 1;
+                return $self;
+            });
+    
+            $totalCampaignPoints = DB::table('campaign_participants as c')
+                ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
+                ->where('u.company_id', '=', $campaign->company_id)
+                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('c.campaign_id', '=', $campaign->id)
-                ->where('c.deleted', '=', 0);
-        })
-        ->leftJoinSub($subquery, 'totals', function ($join) {
-            $join->on('u.id', '=', 'totals.user_id');
-        })
-        
-        ->where('u.company_id', '=', $campaign->company_id)
-        ->where('u.id', '=', $request->logged_id)
+                ->where('u.deleted', '=', 0)
+                ->where('c.deleted', '=', 0)
+                ->sum('c.points');
+    
+            $campaign->total_points = $totalCampaignPoints;
+    
+    
+            $campaign->self = $participant_self;
+            $campaign->time_taken=$campaign_data->time_taken;
+            $campaign->total_points = $totalCampaignPoints;
 
-        // ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-        ->where('u.deleted', '=', 0)
-        ->select('c.game_id',
-            'u.id as user_id', 
-            'u.user_name', 
-            'u.avatar', 
-            'u.company_id', 
-        'c.predicted_answer','c.campaign_id', // Selects one predicted_answer
-            'totals.total_points'
-        )
-        ->groupBy('u.id', 'c.game_id','c.campaign_id','u.user_name', 'u.avatar', 'u.company_id', 'c.predicted_answer','totals.total_points')
-        ->get();
-
-        $participant_self = $participant_self->map(function($self) use ($participantsArray) {
-            $self->rank = array_search($self->user_id, array_column($participantsArray, 'user_id')) + 1;
-            return $self;
-        });
-
-        $totalCampaignPoints = DB::table('campaign_participants as c')
-            ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
-            ->where('u.company_id', '=', $campaign->company_id)
-            ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
-            ->where('c.campaign_id', '=', $campaign->id)
-            ->where('u.deleted', '=', 0)
-            ->where('c.deleted', '=', 0)
-            ->sum('c.points');
-
-        $campaign->total_points = $totalCampaignPoints;
-
-
+            // Add games to the campaign object
+            $campaign->participants = $participantsArray;
+            }
+            
+      
     if($campaign->event_title=="PREDICTION EVENT"){
         $games = DB::table('games')
             ->where('campaign_id', '=', $campaign->id)
@@ -281,22 +294,20 @@ class PredictionsController extends Controller{
             ->where('deleted', '=', 0)
             ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
             ->get();
+        $campaign->quizzes = $quizzes;
            
         
-        $campaign->total_points = $totalCampaignPoints;
-
-        // Add games to the campaign object
-        $campaign->quizzes = $quizzes;
-        $campaign->participants = $participantsArray;
+      
     }
 
-        $campaign->self = $participant_self;
-        $campaign->time_taken=$campaign_data->time_taken;
+      
 
 
     
 
-
+        }else{
+            return response()->json(['status' => true, 'data' =>[]]);
+        }
     return response()->json(['status' => true, 'data' => $campaign]);}
     else{
         return response()->json(['status' => true, 'data' =>[]]);

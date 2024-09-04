@@ -418,9 +418,9 @@ class UsersController extends Controller{
                 ->first();
                 // $result=$result[0];
                 $md5_password = md5($request->input('confirm_password'));
+               
                 // return $result->email;
             if ($result) {
-            //    return "hii";
                 DB::table('users')
                     ->where('email', $email)
                     ->update([
@@ -430,6 +430,20 @@ class UsersController extends Controller{
                         'password' =>$md5_password,
                         'company_id'=>$campaign->company_id
                     ]);
+
+                    $participant=DB::table('campaign_users')
+                    ->where('user_id','=',$result->id)
+                    ->where('campaign_id','=',$request->campaign_id)
+                    ->first();
+                    if($participant){
+
+                    }
+                    else{
+                        $data = array(
+                            'user_id'=>$result->id,
+                            'campaign_id'=>$request->campaign_id);
+                            $pid= DB::table('campaign_users')->insertGetId($data);
+                    }
                 $response = array('status' => true, 'msg' => 'Information updated successfully');
                 return json_encode($response);
         } else {
@@ -446,6 +460,12 @@ class UsersController extends Controller{
                 );
     
                 $gid= DB::table('users')->insertGetId($data);
+
+                $data = array(
+                    'user_id'=>$gid,
+                    'campaign_id'=>$request->campaign_id);
+                    $pid= DB::table('campaign_users')->insertGetId($data);
+
                 $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$data);
                 return response()->json($data);
             }
