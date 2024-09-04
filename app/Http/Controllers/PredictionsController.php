@@ -109,6 +109,7 @@ class PredictionsController extends Controller{
     })
     ->where('c.deleted', '=', 0)
     ->where('c.company_id', '=', $request['logged_company'])
+    ->where('c.id', '=', $request['campaign_id'])
     ->where('c.end_date', '>=', now()) 
     ->select(
         'c.*',
