@@ -172,7 +172,7 @@ class PredictionsController extends Controller{
             ->select('c.user_id', DB::raw('SUM(c.points) as total_points'))
             ->groupBy('c.user_id');
         
-            $user_participation=DB::table('campaign_participants')
+            $user_participation=DB::table('campaign_users')
             ->where('user_id','=',$request['logged_id'])
             ->where('campaign_id','=',$campaign->id)
             ->where('deleted','=',0)
