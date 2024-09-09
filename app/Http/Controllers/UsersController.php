@@ -428,7 +428,6 @@ class UsersController extends Controller{
                         'user_type'=>3,
                         'is_active'=>1,
                         'password' =>$md5_password,
-                        'company_id'=>$campaign->company_id
                     ]);
 
                     $participant=DB::table('campaign_users')
@@ -456,7 +455,6 @@ class UsersController extends Controller{
                 'token' => $api_token,
                 'user_type'=>3,
                 'is_active'=>1,
-                'company_id'=>$campaign->company_id
                 );
     
                 $gid= DB::table('users')->insertGetId($data);

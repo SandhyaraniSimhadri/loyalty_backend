@@ -456,8 +456,6 @@ class CampaignsController extends Controller{
                 ->leftJoinSub($subquery, 'totals', function ($join) {
                     $join->on('u.id', '=', 'totals.user_id');
                 })
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('u.deleted', '=', 0)
                 ->select(
                     'c.campaign_id',
@@ -474,8 +472,6 @@ class CampaignsController extends Controller{
                 // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('c.campaign_id', '=', $campaign->id)
                 ->where('u.deleted', '=', 0)
                 ->where('c.deleted', '=', 0)
@@ -514,8 +510,7 @@ class CampaignsController extends Controller{
                     DB::raw('COALESCE(totals.total_points, 0) as total_points'),
                     DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
                 )
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0)
+                ->where('c.campaign_id', '=', $campaign->id)
                 ->where('u.deleted', '=', 0)
                 ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken', 'c.predicted_answers')
                 ->orderBy('total_points', 'desc')
@@ -525,8 +520,6 @@ class CampaignsController extends Controller{
          // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('c.campaign_id', '=', $campaign->id)
                 ->where('u.deleted', '=', 0)
                 ->where('c.deleted', '=', 0)

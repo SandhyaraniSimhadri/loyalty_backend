@@ -101,14 +101,16 @@ class PredictionsController extends Controller{
     }
     public function get_prediction_details(Request $request) {
         // Fetch campaigns
+        
+
     $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
+    if($request['campaign_id']){
     $campaign_data = DB::table('campaigns as c')
     ->leftJoin('users_campaigns_timetaken as uc', function($join) use ($request) {
         $join->on('c.id', '=', 'uc.campaign_id')
             ->where('uc.user_id', '=', $request['logged_id']);
     })
     ->where('c.deleted', '=', 0)
-    ->where('c.company_id', '=', $request['logged_company'])
     ->where('c.id', '=', $request['campaign_id'])
     ->where('c.end_date', '>=', now()) 
     ->select(
@@ -116,7 +118,33 @@ class PredictionsController extends Controller{
         'uc.time_taken'
     )
     ->first();
-   
+    }
+    else{
+        $user_linked=DB::table('campaign_users')
+        ->where('user_id','=',$request['logged_id'])
+        ->where('deleted','=',0)
+        ->orderBy('created_at', 'DESC')
+        ->first();
+        if($user_linked){
+            $campaign_data = DB::table('campaigns as c')
+            ->leftJoin('users_campaigns_timetaken as uc', function($join) use ($request) {
+                $join->on('c.id', '=', 'uc.campaign_id')
+                    ->where('uc.user_id', '=', $request['logged_id']);
+            })
+            ->where('c.deleted', '=', 0)
+            ->where('c.id', '=', $user_linked->campaign_id)
+            ->where('c.end_date', '>=', now()) 
+            ->select(
+                'c.*',
+                'uc.time_taken'
+            )
+            ->first();
+        }
+        else{
+        return response()->json(['status' => true, 'data' =>[]]);
+
+        }
+    }
   
         if($campaign_data){
             $user_linked=DB::table('campaign_users')
@@ -168,8 +196,6 @@ class PredictionsController extends Controller{
                 })
                 ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
                 ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0)
                 ->where('u.deleted', '=', 0)
                 ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken') // Include totals and time_taken in groupBy
                 ->orderBy('total_points', 'desc')
@@ -206,8 +232,6 @@ class PredictionsController extends Controller{
             ->leftJoinSub($subquery, 'totals', function ($join) {
                 $join->on('u.id', '=', 'totals.user_id');
             })
-            
-            ->where('u.company_id', '=', $campaign->company_id)
             ->where('u.id', '=', $request->logged_id)
     
             // ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
@@ -230,8 +254,6 @@ class PredictionsController extends Controller{
     
             $totalCampaignPoints = DB::table('campaign_participants as c')
                 ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
-                ->where('u.company_id', '=', $campaign->company_id)
-                ->where('u.company_id', '!=', 0) // Exclude records where company_id is 0
                 ->where('c.campaign_id', '=', $campaign->id)
                 ->where('u.deleted', '=', 0)
                 ->where('c.deleted', '=', 0)
