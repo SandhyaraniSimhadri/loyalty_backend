@@ -496,24 +496,33 @@ class CampaignsController extends Controller{
 
 
             $participants = DB::table('users as u')
-                ->leftJoin(DB::raw('(SELECT user_id, GROUP_CONCAT(REPLACE(predicted_answer, "Notansweredtimeexceeded", "-") ORDER BY id SEPARATOR ",") as predicted_answers FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as c'), 'u.id', '=', 'c.user_id')
-                ->join(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
-                ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
-                ->select(
-                    'u.id as user_id',
-                    'u.user_name',
-                    'u.avatar',
-                    'u.company_id',
-                    DB::raw('COALESCE(c.predicted_answers, "") as predicted_answers'),
-                    DB::raw('COALESCE(totals.total_points, 0) as total_points'),
-                    DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
-                )
-                ->where('campaign_participants.campaign_id', '=', $campaign->id)
-                ->where('u.deleted', '=', 0)
-                ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken', 'c.predicted_answers')
-                ->orderBy('total_points', 'desc')
-                ->orderBy('time_taken', 'asc')
-                ->get();
+    ->leftJoin(DB::raw('(SELECT user_id, GROUP_CONCAT(REPLACE(predicted_answer, "Notansweredtimeexceeded", "-") ORDER BY id SEPARATOR ",") as predicted_answers 
+                        FROM campaign_participants 
+                        WHERE campaign_id = '.$campaign->id.' AND deleted = 0 
+                        GROUP BY user_id) as c'), 'u.id', '=', 'c.user_id')
+    ->join(DB::raw('(SELECT user_id, SUM(points) as total_points 
+                    FROM campaign_participants 
+                    WHERE campaign_id = '.$campaign->id.' AND deleted = 0 
+                    GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
+    ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken 
+                        FROM users_campaigns_timetaken 
+                        WHERE campaign_id = '.$campaign->id.' AND deleted = 0 
+                        GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
+    ->select(
+        'u.id as user_id',
+        'u.user_name',
+        'u.avatar',
+        'u.company_id',
+        DB::raw('COALESCE(c.predicted_answers, "") as predicted_answers'),
+        DB::raw('COALESCE(totals.total_points, 0) as total_points'),
+        DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
+    )
+    // Removed the line causing the error
+    ->where('u.deleted', '=', 0)
+    ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken', 'c.predicted_answers')
+    ->orderBy('total_points', 'desc')
+    ->orderBy('time_taken', 'asc')
+    ->get();
 
          // return $participants;
                 $totalCampaignPoints = DB::table('campaign_participants as c')
