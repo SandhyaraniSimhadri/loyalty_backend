@@ -424,9 +424,7 @@ class CampaignsController extends Controller{
         }
     }
     public function get_report(REQUEST $request){
-
-      
-            
+ 
             $campaigns = DB::table('campaigns as cam')
         ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
         ->where('cam.id','=',$request->id)
@@ -510,7 +508,7 @@ class CampaignsController extends Controller{
                     DB::raw('COALESCE(totals.total_points, 0) as total_points'),
                     DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
                 )
-                ->where('c.campaign_id', '=', $campaign->id)
+                ->where('campaign_participants.campaign_id', '=', $campaign->id)
                 ->where('u.deleted', '=', 0)
                 ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken', 'c.predicted_answers')
                 ->orderBy('total_points', 'desc')
