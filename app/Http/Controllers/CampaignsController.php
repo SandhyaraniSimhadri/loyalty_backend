@@ -228,6 +228,10 @@ class CampaignsController extends Controller{
             // return $request->hasFile('homeTeamLogo')
             $image = $request->file('image')->store('images', 'public');
             $image = 'storage/'.$image;
+
+            $update_data=DB::table('campaigns')
+            ->where('id','=',$request->id)
+            ->update(['image'=>$image]);
         }
         $event_value = DB::table('events')
         ->where('id','=',$request->event_id)
@@ -243,7 +247,7 @@ class CampaignsController extends Controller{
             'game_type' => $request->game_type,
             'terms_and_conditions' => $request->terms_and_conditions,
             'description' => $request->description,
-            'image'=>$image,
+          
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'company_id'=> $request->company_id,
