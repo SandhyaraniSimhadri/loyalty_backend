@@ -37,6 +37,11 @@ class CampaignsController extends Controller{
         $data = array(
           
             'campaign_title' => $request->campaign_title,
+            'title' => $request->title,
+            'terms_and_conditions' => $request->terms_and_conditions,
+            'game_type' => $request->game_type,
+            'description' => $request->description,
+            'image'=>$image,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'event_id' => $request->event_id,
@@ -234,6 +239,11 @@ class CampaignsController extends Controller{
         ->update([
             'event_id' => $request->event_id,
             'campaign_title' => $request->campaign_title,
+            'title' => $request->title,
+            'game_type' => $request->game_type,
+            'terms_and_conditions' => $request->terms_and_conditions,
+            'description' => $request->description,
+            'image'=>$image,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'company_id'=> $request->company_id,

@@ -105,6 +105,7 @@ class PredictionsController extends Controller{
 
     $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
     if($request['campaign_id']){
+        // return "hi";
     $campaign_data = DB::table('campaigns as c')
     ->leftJoin('users_campaigns_timetaken as uc', function($join) use ($request) {
         $join->on('c.id', '=', 'uc.campaign_id')
@@ -118,6 +119,7 @@ class PredictionsController extends Controller{
         'uc.time_taken'
     )
     ->first();
+    // return $campaign_data;
     }
     else{
         $user_linked=DB::table('campaign_users')
