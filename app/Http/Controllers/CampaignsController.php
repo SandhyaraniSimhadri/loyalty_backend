@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Storage;
 use App;
 use Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -26,12 +26,7 @@ class CampaignsController extends Controller{
 
     public function add_campaign(Request $request)
     {
-        $image=null;
-        if ($request->hasFile('image')) {
-            // return $request->hasFile('homeTeamLogo')
-            $image = $request->file('image')->store('images', 'public');
-            $image = 'storage/'.$image;
-        }
+        
        
         $date = date('Y-m-d H:i:s');
         $data = array(
@@ -41,7 +36,6 @@ class CampaignsController extends Controller{
             'terms_and_conditions' => $request->terms_and_conditions,
             'game_type' => $request->game_type,
             'description' => $request->description,
-            'image'=>$image,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'event_id' => $request->event_id,
@@ -51,6 +45,47 @@ class CampaignsController extends Controller{
             );
 
             $aid= DB::table('campaigns')->insertGetId($data);
+            if($aid){
+            $campaignFolder = "images/campaign_$aid";
+            Storage::makeDirectory($campaignFolder); // Create the folder
+            $logo_image = null;
+            $login_image = null;
+            $welcome_image = null;
+            $campaign_image = null;
+    
+            if ($request->hasFile('logo_image')) {
+                $logo_image = $request->file('logo_image')->store($campaignFolder, 'public');
+                $logo_image = 'storage/' . $logo_image;
+            }
+    
+            if ($request->hasFile('login_image')) {
+                $login_image = $request->file('login_image')->store($campaignFolder, 'public');
+                $login_image = 'storage/' . $login_image;
+            }
+    
+            if ($request->hasFile('welcome_image')) {
+                $welcome_image = $request->file('welcome_image')->store($campaignFolder, 'public');
+                $welcome_image = 'storage/' . $welcome_image;
+            }
+    
+            if ($request->hasFile('campaign_image')) {
+                $campaign_image = $request->file('campaign_image')->store($campaignFolder, 'public');
+                $campaign_image = 'storage/' . $campaign_image;
+            }
+    
+            // Update campaign with image paths
+            DB::table('campaigns')
+                ->where('id', $aid)
+                ->update([
+                    'logo_image' => $logo_image,
+                    'login_image' => $login_image,
+                    'welcome_image' => $welcome_image,
+                    'campaign_image' => $campaign_image
+                ]);
+    
+
+            }
+
             $event_value = DB::table('events')
             ->where('id','=',$request->event_id)
             ->get();
@@ -148,7 +183,7 @@ class CampaignsController extends Controller{
             ->where('e.deleted', '=', 0)
             ->where('cam.deleted', '=', 0)
             ->where('c.deleted', '=', 0)
-            ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title','c.company_name as company_name')
+            ->select('cam.*', 'cam.campaign_title', 'cam.campaign_image as avatar','e.title as event_title','c.company_name as company_name')
             ->orderBy('cam.created_at', 'DESC')
             ->get();
     
@@ -190,7 +225,7 @@ class CampaignsController extends Controller{
             ->where('e.deleted', '=', 0)
             ->where('cam.deleted', '=', 0)
             ->where('c.deleted', '=', 0)
-            ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title','c.company_name as company_name')
+            ->select('cam.*', 'cam.campaign_title', 'cam.campaign_image as avatar','e.title as event_title','c.company_name as company_name')
             ->orderBy('cam.created_at', 'DESC')
             ->get();
     
@@ -444,7 +479,7 @@ class CampaignsController extends Controller{
         ->where('cam.id','=',$request->id)
         ->where('e.deleted', '=', 0)
         ->where('cam.deleted', '=', 0)
-        ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
+        ->select('cam.*', 'cam.campaign_title', 'cam.campaign_image as avatar','e.title as event_title')
         ->orderBy('cam.created_at', 'DESC')
         ->get();
 

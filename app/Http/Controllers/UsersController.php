@@ -474,6 +474,9 @@ class UsersController extends Controller{
                 // return $request->hasFile('homeTeamLogo')
                 $image = $request->file('image')->store('images', 'public');
                 $image = 'storage/'.$image;
+                $update_data=DB::table('users')
+                ->where('id','=',$request->id)
+                ->update(['avatar'=>$image]);
             }
             if($request->name=='null'){
                 $request->name='';
@@ -484,8 +487,7 @@ class UsersController extends Controller{
                 'user_name' => $request->user_name,
                 'name' => $request->name,
                 'mobile_no' => $request->phone_number,
-                'email' => $request->email,
-                'avatar'=>$image
+                'email' => $request->email
                 
             ]);
           

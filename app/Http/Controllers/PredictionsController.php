@@ -162,7 +162,7 @@ class PredictionsController extends Controller{
         ->where('cam.id','=',$campaign_data->id)
         ->where('e.deleted', '=', 0)
         ->where('cam.deleted', '=', 0)
-        ->select('cam.*', 'cam.campaign_title', 'cam.image as avatar','e.title as event_title')
+        ->select('cam.*', 'cam.campaign_title', 'cam.campaign_image as avatar','e.title as event_title')
         ->orderBy('cam.created_at', 'DESC')
         ->get();
         $campaign = $campaigns[0];
