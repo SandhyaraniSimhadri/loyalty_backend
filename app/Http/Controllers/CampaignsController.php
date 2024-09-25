@@ -47,7 +47,7 @@ class CampaignsController extends Controller{
             $aid= DB::table('campaigns')->insertGetId($data);
             if($aid){
             $campaignFolder = "images/campaign_$aid";
-            Storage::makeDirectory($campaignFolder); // Create the folder
+            Storage::makeDirectory($campaignFolder); 
             $logo_image = null;
             $login_image = null;
             $welcome_image = null;
@@ -258,16 +258,7 @@ class CampaignsController extends Controller{
     }
     
     public function update_campaign(REQUEST $request){
-        $image=null;
-        if ($request->hasFile('image')) {
-            // return $request->hasFile('homeTeamLogo')
-            $image = $request->file('image')->store('images', 'public');
-            $image = 'storage/'.$image;
-
-            $update_data=DB::table('campaigns')
-            ->where('id','=',$request->id)
-            ->update(['image'=>$image]);
-        }
+   
         $event_value = DB::table('events')
         ->where('id','=',$request->event_id)
         ->get();
@@ -289,6 +280,49 @@ class CampaignsController extends Controller{
             'duration'=>$request->duration,
             'calc_points_immediately'=>$request->calculatePoints
         ]);
+
+
+        $campaignFolder = "images/campaign_$request->id";
+        if (!Storage::exists($campaignFolder)) {
+        Storage::makeDirectory($campaignFolder); }
+        $logo_image = null;
+        $login_image = null;
+        $welcome_image = null;
+        $campaign_image = null;
+
+        if ($request->hasFile('logo_image')) {
+            $logo_image = $request->file('logo_image')->store($campaignFolder, 'public');
+            $logo_image = 'storage/' . $logo_image;
+
+            $update_data=DB::table('campaigns')
+            ->where('id','=',$request->id)
+            ->update(['logo_image'=>$logo_image]);
+        }
+
+        if ($request->hasFile('login_image')) {
+            $login_image = $request->file('login_image')->store($campaignFolder, 'public');
+            $login_image = 'storage/' . $login_image;
+
+            $update_data=DB::table('campaigns')
+            ->where('id','=',$request->id)
+            ->update(['login_image'=>$login_image]);
+        }
+
+        if ($request->hasFile('welcome_image')) {
+            $welcome_image = $request->file('welcome_image')->store($campaignFolder, 'public');
+            $welcome_image = 'storage/' . $welcome_image;
+            $update_data=DB::table('campaigns')
+            ->where('id','=',$request->id)
+            ->update(['welcome_image'=>$welcome_image]);
+        }
+
+        if ($request->hasFile('campaign_image')) {
+            $campaign_image = $request->file('campaign_image')->store($campaignFolder, 'public');
+            $campaign_image = 'storage/' . $campaign_image;
+            $update_data=DB::table('campaigns')
+            ->where('id','=',$request->id)
+            ->update(['campaign_image'=>$campaign_image]);
+        }
 
 
         if($event_value[0]->title=="PREDICTION EVENT"){
