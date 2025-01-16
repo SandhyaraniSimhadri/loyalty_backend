@@ -354,21 +354,19 @@ class CampaignsController extends Controller{
                 $team_b_image=null;
               
                 if ($request->hasFile("team_a_image_{$i}")) {
-                    // return $request->hasFile('homeTeamLogo')
-                    $team_a_image = $request->file("team_b_image_{$i}")->store('images', 'public');
-                    $team_a_image = 'storage/'.$team_a_image;
+                    $team_a_image = $request->file("team_a_image_{$i}")->store('images', 'public');
+                    $team_a_image = 'storage/' . $team_a_image;
+                } else {
+                    $team_a_image = $request->input("team_a_image_{$i}"); // Use input() for dynamically referenced fields
                 }
-                else{
-                    $team_a_image=$request->team_a_image_{$i};
-                }
+                
                 if ($request->hasFile("team_b_image_{$i}")) {
-                    // return $request->hasFile('homeTeamLogo')
                     $team_b_image = $request->file("team_b_image_{$i}")->store('images', 'public');
-                    $team_b_image = 'storage/'.$team_b_image;
+                    $team_b_image = 'storage/' . $team_b_image;
+                } else {
+                    $team_b_image = $request->input("team_b_image_{$i}"); // Use input() for dynamically referenced fields
                 }
-                else{
-                    $team_b_image=$request->team_b_image_{$i};
-                }
+                
                 // return $game;
                 
 

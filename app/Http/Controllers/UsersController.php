@@ -347,7 +347,10 @@ class UsersController extends Controller{
             $result = DB::table('users')
                 ->where('email', '=', $email)
                 ->first();
-                // $result=$result[0];
+                // $result= response()->json($result); 
+                // return $result;
+
+            
                 $md5_password = md5($request->input('confirm_password'));
                 // return $result->email;
             if ($result) {
@@ -358,6 +361,11 @@ class UsersController extends Controller{
                         'password' =>$md5_password,
                         'login_times'=>$result->login_times+1,
                     ]);
+                    $data = array(
+                        'user_id'=>$result->id,
+                        'campaign_id'=>$result->campaign_id);
+
+                        $pid= DB::table('campaign_users')->insertGetId($data);
                 $response = array('status' => true, 'msg' => 'Password changed successfully');
                 return json_encode($response);
             } else {
@@ -405,7 +413,8 @@ class UsersController extends Controller{
             'email' => 'required',
         
         ]);
-        $date = date('Y-m-d H:i:s');
+        // return "hi";    
+            $date = date('Y-m-d H:i:s');
         $email = $request->input('email');
         $campaign = DB::table('campaigns')
         ->where('id','=',$request->campaign_id)
@@ -446,6 +455,7 @@ class UsersController extends Controller{
                 $response = array('status' => true, 'msg' => 'Information updated successfully');
                 return json_encode($response);
         } else {
+            // return "hi";
             $token = Str::random(60);
             $api_token = hash('sha256', $token);
             $data = array(
@@ -469,14 +479,16 @@ class UsersController extends Controller{
             }
         }
         public function update_user_info(REQUEST $request){
+            // return $request;
             $image=null;
             if ($request->hasFile('image')) {
                 // return $request->hasFile('homeTeamLogo')
                 $image = $request->file('image')->store('images', 'public');
                 $image = 'storage/'.$image;
-                $update_data=DB::table('users')
+                $update_data_image=DB::table('users')
                 ->where('id','=',$request->id)
                 ->update(['avatar'=>$image]);
+                // return $update_data;
             }
             if($request->name=='null'){
                 $request->name='';
@@ -493,7 +505,7 @@ class UsersController extends Controller{
           
          
            
-            if($update_data ){
+            if($update_data || $update_data_image){
                 $data = array('status' => true,'data'=>$image, 'msg' => 'Details updated successfully');
                 return response()->json($data);
                 } 
