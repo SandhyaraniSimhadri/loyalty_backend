@@ -597,7 +597,7 @@ class UsersController extends Controller{
                     $CIF=1;
                 }
                 if($request->highScore>10){
-                    $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$CIF);
+                    $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore);
                     return json_encode($response);
                 }
                else{
