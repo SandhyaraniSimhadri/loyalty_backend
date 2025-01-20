@@ -576,7 +576,7 @@ class UsersController extends Controller{
         //   return   $request->header('token');
             $CIF=0;
             $token =$request->header('token');
-            return $token;
+            // return $token;
             if($token=="1234567"){
                 $CIF=1;
             }
