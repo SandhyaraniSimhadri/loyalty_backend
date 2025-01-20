@@ -588,5 +588,21 @@ class UsersController extends Controller{
                 return json_encode($response);
             }
         }
-        
+        public function userScore(REQUEST $request){
+            //   return   $request->header('token');
+                $CIF=0;
+                $token =$request->header('token');
+                // return $token;
+                if($token=="1234567"){
+                    $CIF=1;
+                }
+                if($request->highScore>10){
+                    $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$CIF);
+                    return json_encode($response);
+                }
+               else{
+                    $response = array('status' => false, 'msg' => 'Something went wrong');
+                    return json_encode($response);
+                }
+            }
     }
