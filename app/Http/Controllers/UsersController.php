@@ -572,6 +572,18 @@ class UsersController extends Controller{
             }
     
         }
-
+        public function ProfileInfo(REQUEST $request){
+            $CIF=0;
+            if($request->token="1234567"){
+                $CIT=1;
+            }
+            if($CIF==1){
+                $response = array('status' => true, 'msg' => 'Details fetched successfully','data'=>$CIF);
+                return json_encode($response);
+            }else{
+                $response = array('status' => false, 'msg' => 'Something went wrong');
+                return json_encode($response);
+            }
+        }
         
     }

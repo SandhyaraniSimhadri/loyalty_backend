@@ -22,6 +22,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::post('update_user_info', 'UsersController@update_user_info');
 
+Route::post('ProfileInfo', 'UsersController@ProfileInfo');
+
 
 
 Route::group(['middleware' => ['cors']], function () {
