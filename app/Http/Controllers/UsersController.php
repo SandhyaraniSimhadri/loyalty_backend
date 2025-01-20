@@ -573,7 +573,7 @@ class UsersController extends Controller{
     
         }
         public function ProfileInfo(REQUEST $request){
-          
+          return  $request->headers->all();
             $CIF=0;
             $token = $request->header('token');
             if($token="1234567"){
