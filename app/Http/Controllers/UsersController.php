@@ -573,9 +573,9 @@ class UsersController extends Controller{
     
         }
         public function ProfileInfo(REQUEST $request){
-          return  $request->headers->all();
+        //   return  $request->headers->all();
             $CIF=0;
-            $token = $request->header('token');
+            $token = $request->header('token')[0];
             if($token="1234567"){
                 $CIT=1;
             }
