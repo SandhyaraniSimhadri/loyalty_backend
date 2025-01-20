@@ -578,7 +578,7 @@ class UsersController extends Controller{
             $token =$request->header('token');
             return $token;
             if($token=="1234567"){
-                $CIT=1;
+                $CIF=1;
             }
             if($CIF==1){
                 $response = array('status' => true, 'msg' => 'Details fetched successfully','data'=>$CIF);
