@@ -573,36 +573,36 @@ class UsersController extends Controller{
     
         }
         public function ProfileInfo(REQUEST $request){
-        //   return   $request->header('token');
             $CIF=0;
             $token =$request->header('token');
-            // return $token;
             if($token=="1234567"){
                 $CIF=1;
             }
             if($CIF==1){
-                $response = array('status' => true, 'msg' => 'Details fetched successfully','data'=>$CIF);
+                $response = array('status' => true, 'msg' => 'Details fetched successfully','data' => ['CIF_id' => $CIF]);
                 return json_encode($response);
             }else{
-                $response = array('status' => false, 'msg' => 'Something went wrong');
+                $response = array('status' => false, 'msg' => "Invalid token");
                 return json_encode($response);
             }
         }
         public function userScore(REQUEST $request){
-            //   return   $request->header('token');
-                $CIF=0;
+              
                 $token =$request->header('token');
-                // return $token;
                 if($token=="1234567"){
-                    $CIF=1;
+                    if($request->highScore>10){
+                        $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore);
+                        return json_encode($response);
+                    }
+                   else{
+                        $response = array('status' => false, 'msg' => "It's not high score");
+                        return json_encode($response);
+                    }
                 }
-                if($request->highScore>10){
-                    $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore);
-                    return json_encode($response);
+                else{
+                    $response = array('status' => false, 'msg' => "Invalid token");
+                        return json_encode($response);
                 }
-               else{
-                    $response = array('status' => false, 'msg' => 'Something went wrong');
-                    return json_encode($response);
-                }
+               
             }
     }
