@@ -24,6 +24,8 @@ Route::post('update_user_info', 'UsersController@update_user_info');
 
 Route::post('ProfileInfo', 'UsersController@ProfileInfo');
 Route::post('userScore', 'UsersController@userScore');
+Route::post('gameUserLogin', 'UsersController@gameUserLogin');
+
 
 
 

@@ -613,4 +613,14 @@ class UsersController extends Controller{
                 }
                
             }
-    }
+            public function gameUserLogin(REQUEST $request){
+              
+                
+                      
+                        return json_encode("success");
+                    
+             
+               
+            }
+ 
+        }
