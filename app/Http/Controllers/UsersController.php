@@ -590,8 +590,16 @@ class UsersController extends Controller{
               
                 $token =$request->header('token');
                 if($token=="1234567"){
-                    if($request->highScore>10){
+                    if($request->highScore>60){
+                        $data = array(
+                            'user_id' => 1,
+                            'game_id' => $request->input('gameId'),
+                            'score' => $request->highScore,
+                            );
+                
+                            $gid= DB::table('users_score')->insertGetId($data);
                         $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore);
+                       
                         return json_encode($response);
                     }
                    else{
