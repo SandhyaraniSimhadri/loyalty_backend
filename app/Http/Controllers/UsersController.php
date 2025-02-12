@@ -588,13 +588,13 @@ class UsersController extends Controller{
         }
         public function userScore(REQUEST $request){
               
-                $token =$request->header('token');
-                if($token=="1234567"){
-                    if($request->highScore>60){
+                $token =$request->header('Authorization');
+                if($token){
+                    if($request->score!=0){
                         $data = array(
                             'user_id' => 1,
                             'game_id' => $request->input('gameId'),
-                            'score' => $request->highScore,
+                            'score' => $request->score,
                             );
                 
                             $gid= DB::table('users_score')->insertGetId($data);
