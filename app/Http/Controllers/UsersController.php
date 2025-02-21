@@ -593,7 +593,7 @@ class UsersController extends Controller{
                     if($request->score!=0){
                         $data = array(
                             'user_id' => 1,
-                            'game_id' => $request->input('gameId'),
+                            'gameKey' => $request->input('gameKey'),
                             'score' => $request->score,
                             );
                 
@@ -613,8 +613,9 @@ class UsersController extends Controller{
                 }
                
             }
-            public function gameUserLogin(REQUEST $request){
-                return json_encode(["status" => "success"]);
-            }
+           public function gameUserLogin(REQUEST $request){
+    return json_encode(["status" => "success"]);
+}
  
         }
+  
