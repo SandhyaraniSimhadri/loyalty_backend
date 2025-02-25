@@ -468,12 +468,12 @@ class UsersController extends Controller{
                 );
     
                 $gid= DB::table('users')->insertGetId($data);
-
+                if($request->campaign_id){
                 $data = array(
                     'user_id'=>$gid,
                     'campaign_id'=>$request->campaign_id);
                     $pid= DB::table('campaign_users')->insertGetId($data);
-
+                }
                 $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$data);
                 return response()->json($data);
             }
