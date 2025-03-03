@@ -600,7 +600,7 @@ class UsersController extends Controller{
                 $gid= DB::table('users_score')->insertGetId($data);
                 $records = DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
-                    ->get();
+                    ->count();
                     return $records;
         
                 if ($userAttempts === null) {
