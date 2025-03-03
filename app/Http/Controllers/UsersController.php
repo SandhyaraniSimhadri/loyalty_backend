@@ -598,7 +598,7 @@ class UsersController extends Controller{
                             );
                 
                             $gid= DB::table('users_score')->insertGetId($data);
-                        $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore, 'leftAttempts'=>1);
+                        $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore, 'leftAttempts'=>0);
                        
                         return json_encode($response);
                     }
