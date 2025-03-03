@@ -591,16 +591,14 @@ class UsersController extends Controller{
             
             if ($token) {
                 $user_id = 1;
+                $userAttempts=3;
                
-                $userAttempts = DB::table('users_score')
+                $totalAttempts = DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
                     ->count();
                 //     return $records;
         
-                if ($userAttempts === 0) {
-                    $userAttempts = 3;
-                }
-                $userAttempts--;
+               $userAttempts=$userAttempts-$totalAttempts;
         
                 if ($userAttempts >= 0) {
 
