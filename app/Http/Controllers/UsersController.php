@@ -586,33 +586,44 @@ class UsersController extends Controller{
                 return json_encode($response);
             }
         }
-        public function userScore(REQUEST $request){
-              
-                $token =$request->header('Authorization');
-                if($token){
-                    if($request->score!=0){
+        public function userScore(Request $request) {
+            $token = $request->header('Authorization');
+            
+            if ($token) {
+                $user_id = 1;
+                $userAttempts = DB::table('users_score')
+                    ->where('gameKey', $request->input('gameKey'))
+                    ->get();
+        
+                if ($userAttempts === null) {
+                    $userAttempts = 3;
+                }
+                $userAttempts--;
+        
+                if ($userAttempts >= 0) {
+
                         $data = array(
                             'user_id' => 1,
                             'gameKey' => $request->input('gameKey'),
                             'score' => $request->score,
                             );
                 
-                            $gid= DB::table('users_score')->insertGetId($data);
-                        $response = array('status' => true, 'msg' => 'Highscore updated successfully','data'=>$request->highScore, 'leftAttempts'=>0);
-                       
-                        return json_encode($response);
-                    }
-                   else{
-                        $response = array('status' => false, 'msg' => "It's not high score");
-                        return json_encode($response);
-                    }
+                        $gid= DB::table('users_score')->insertGetId($data);
+                        
+                        $response = ['status' => false, 'msg' => "Highscore updated successfully", 'leftAttempts' => $userAttempts];
+                        return response()->json($response);
+                  
+                } else {
+                    // No attempts left
+                    $response = ['status' => false, 'msg' => "No attempts left", 'leftAttempts' => 0];
+                    return response()->json($response);
                 }
-                else{
-                    $response = array('status' => false, 'msg' => "Invalid token");
-                        return json_encode($response);
-                }
-               
+            } else {
+                $response = ['status' => false, 'msg' => "Invalid token"];
+                return response()->json($response);
             }
+        }
+        
            public function gameUserLogin(REQUEST $request){
     return json_encode(["status" => "success"]);
 }
