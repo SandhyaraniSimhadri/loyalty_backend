@@ -591,7 +591,7 @@ class UsersController extends Controller{
             
             if ($token) {
                 $user_id = 1;
-                $userAttempts=3;
+                $userAttempts=2;
                
                 $totalAttempts = DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
