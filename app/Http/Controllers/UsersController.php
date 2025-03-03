@@ -591,19 +591,13 @@ class UsersController extends Controller{
             
             if ($token) {
                 $user_id = 1;
-                $data = array(
-                    'user_id' => 1,
-                    'gameKey' => $request->input('gameKey'),
-                    'score' => $request->score,
-                    );
-        
-                $gid= DB::table('users_score')->insertGetId($data);
-                $records = DB::table('users_score')
+               
+                $userAttempts = DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
                     ->count();
-                    return $records;
+                //     return $records;
         
-                if ($userAttempts === null) {
+                if ($userAttempts === 0) {
                     $userAttempts = 3;
                 }
                 $userAttempts--;
