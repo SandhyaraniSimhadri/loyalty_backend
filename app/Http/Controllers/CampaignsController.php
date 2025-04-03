@@ -26,9 +26,15 @@ class CampaignsController extends Controller{
 
     public function add_campaign(Request $request)
     {
+        $tag_info = DB::table('campaigns')
+        ->where('campaign_tag', '=', $request->tag)
+        ->where('id', '!=', $request->id) // Exclude the current campaign
+        ->get();
+        if ($tag_info->isEmpty()) {
         
-       
+        $image=null;
         $date = date('Y-m-d H:i:s');
+      
         $data = array(
           
             'campaign_title' => $request->campaign_title,
@@ -41,10 +47,12 @@ class CampaignsController extends Controller{
             'event_id' => $request->event_id,
             'company_id'=> $request->company_id,
             'duration'=> $request->duration,
-            'calc_points_immediately'=>$request->calculatePoints
+            'calc_points_immediately'=>$request->calculatePoints,
+            'login_text'=>$request->login_text,
             );
 
             $aid= DB::table('campaigns')->insertGetId($data);
+          
             if($aid){
             $campaignFolder = "images/campaign_$aid";
             Storage::makeDirectory($campaignFolder); 
@@ -136,36 +144,53 @@ class CampaignsController extends Controller{
             }
 
             if($event_value[0]->title=="QUIZ"){
-
-        
-                $questions = json_decode($request->questions, true);
-      
-
-                if($questions){
-                    $i=0;
-                foreach($questions as $question){
-                    $data = array(
-          
-                        'question' => $question['question'],
-                        'response_a' => $question['response_a'],
-                        'response_b' => $question['response_b'],
-                        'response_c' => $question['response_c'],
-                        'response_d' => $question['response_d'],
-                        'correct_answer' => $question['answer'],
-                        'campaign_id'=>$aid,
-                        'points'=>$question['points'],
-                        );
-            
-                        $gid= DB::table('quizzes')->insertGetId($data);
-
-                        $i=$i+1;
-                }}
+                // return $request->questions;
+                if ($request->questions) {
+                    foreach ($request->questions as $question) {
+                        $image = null;
+                
+                        // Check if 'selectedFile' exists and is Base64
+                        if (!empty($question['selectedFile']) && preg_match('/^data:image\/(\w+);base64,/', $question['selectedFile'], $matches)) {
+                            $imageType = $matches[1]; // Extract image type (e.g., jpg, png)
+                            $imageBase64 = substr($question['selectedFile'], strpos($question['selectedFile'], ',') + 1);
+                            $imageBase64 = base64_decode($imageBase64); // Decode Base64
+                
+                            // Generate unique file name
+                            $fileName = uniqid() . '.' . $imageType;
+                            $filePath = "storage/images/" . $fileName;
+                
+                            // Store the image in storage/app/public/images
+                            Storage::disk('public')->put("images/" . $fileName, $imageBase64);
+                
+                            // Store only the relative path
+                            $image = $filePath;
+                        }
+                
+                        // Insert question details into the database
+                        $data = [
+                            'question' => $question['question'],
+                            'response_a' => $question['response_a'],
+                            'response_b' => $question['response_b'],
+                            'response_c' => $question['response_c'],
+                            'response_d' => $question['response_d'],
+                            'correct_answer' => $question['answer'],
+                            'campaign_id' => $aid,
+                            'points' => $question['points'],
+                            'file_name'=>$question['fileName'],
+                            'image' => $image // Store only the relative path
+                        ];
+                
+                        DB::table('quizzes')->insert($data);
+                    }
+                }
+                
+                
               
             }
 
 
         if ($aid) { 
-                $data = array('status' => true, 'msg' => 'Campaign added successfully');
+                $data = array('status' => true, 'msg' => 'Campaign added successfully','tag'=>'No duplicate');
                 return response()->json($data);
 
         } else {
@@ -173,7 +198,10 @@ class CampaignsController extends Controller{
             $data = array('status' => false, 'msg' => 'Failed');
             return response()->json($data);
         }
-
+    }
+    else{
+        $data = array('status' => true, 'msg' => 'This tag is already in use. Please choose a different one.','tag'=>'Duplicate');
+    }
     }
     public function get_campaigns(Request $request) {
         // Fetch campaigns
@@ -239,13 +267,14 @@ class CampaignsController extends Controller{
                     ->get();
         
                 // Add games to the campaign object
-                $campaign->games = $games;}
+                $campaign->games = $games;
+            }
     
                 if($campaign->event_title=='QUIZ'){
                     $quizzes = DB::table('quizzes')
                         ->where('campaign_id', '=', $campaign->id)
                         ->where('deleted', '=', 0)
-                        ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer')
+                        ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer','image','file_name')
                         ->get();
             
                     
@@ -258,22 +287,28 @@ class CampaignsController extends Controller{
     }
     
     public function update_campaign(REQUEST $request){
-   
+        $tag_info = DB::table('campaigns')
+        ->where('campaign_tag', '=', $request->tag)
+        ->where('id', '!=', $request->id) // Exclude the current campaign
+        ->get();
+        if ($tag_info->isEmpty()) {
+        
         $event_value = DB::table('events')
         ->where('id','=',$request->event_id)
         ->get();
 
-       
+    
         $update_data=DB::table('campaigns')
         ->where('id','=',$request->id)
         ->update([
             'event_id' => $request->event_id,
             'campaign_title' => $request->campaign_title,
+            'campaign_tag'=> $request->campaign_tag,
             'title' => $request->title,
             'game_type' => $request->game_type,
             'terms_and_conditions' => $request->terms_and_conditions,
             'description' => $request->description,
-          
+            'login_text'=>$request->login_text,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'company_id'=> $request->company_id,
@@ -419,14 +454,37 @@ class CampaignsController extends Controller{
             ->update([
                 'deleted' => 1,
             ]);
-            $questions = json_decode($request->questions, true);
+            // $questions = json_decode($request->questions, true);
 
 
-            if($questions){
-                foreach($questions as $question){
+            if($request->questions){
+                foreach($request->questions as $question){
                     // return $game;
+                    $image = null;
+                
+                    // Check if 'selectedFile' exists and is Base64
+                    if($question['updated']){
+
                     
-    
+                    if (!empty($question['selectedFile']) && preg_match('/^data:image\/(\w+);base64,/', $question['selectedFile'], $matches)) {
+                        $imageType = $matches[1]; // Extract image type (e.g., jpg, png)
+                        $imageBase64 = substr($question['selectedFile'], strpos($question['selectedFile'], ',') + 1);
+                        $imageBase64 = base64_decode($imageBase64); // Decode Base64
+            
+                        // Generate unique file name
+                        $file_name = uniqid() . '.' . $imageType;
+                        $filePath = "storage/images/" . $file_name;
+            
+                        // Store the image in storage/app/public/images
+                        Storage::disk('public')->put("images/" . $file_name, $imageBase64);
+            
+                        // Store only the relative path
+                        $image = $filePath;
+                    }
+                }
+                else{
+                    $image=$question['image'];
+                }
                     if($question['id']==0){
     
                          $data = array(
@@ -438,6 +496,8 @@ class CampaignsController extends Controller{
                             'correct_answer' => $question['correct_answer'],
                             'campaign_id'=>$request->id,
                             'points'=>$question['points'],
+                            'file_name'=>$question['file_ame'],
+                            'image' => $image // Store only the relative path
                         );
             
                         $id= DB::table('quizzes')->insertGetId($data);}
@@ -455,6 +515,8 @@ class CampaignsController extends Controller{
                             'correct_answer' => $question['correct_answer'],
                             'campaign_id'=>$request->id,
                             'points'=>$question['points'],
+                            'file_name'=>$question['file_name'],
+                            'image' => $image ,
                             'deleted' => 0,
                         ]);
                     }
@@ -464,12 +526,15 @@ class CampaignsController extends Controller{
                 
         }
         if($update_data || $update_details || $update_id){
-            $data = array('status' => true, 'msg' => 'Campaign details updated successfully');
+            $data = array('status' => true, 'msg' => 'Campaign details updated successfully','tag'=>'No Duplicate');
             return response()->json($data);
             } 
         else {
             $data = array('status' => false, 'msg' => 'Failed');
             return response()->json($data);
+        }}
+        else{
+            $data = array('status' => true, 'msg' => 'This tag is already in use. Please choose a different one.','tag'=>'Duplicate');
         }
     }
     public function delete_campaign(REQUEST $request){
