@@ -144,7 +144,7 @@ class CampaignsController extends Controller{
             }
 
             if($event_value[0]->title=="QUIZ"){
-                // return $request->questions;
+                return $request->questions;
                 if ($request->questions) {
                     foreach ($request->questions as $question) {
                         $image = null;
