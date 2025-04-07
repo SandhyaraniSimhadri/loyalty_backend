@@ -67,26 +67,24 @@ class CampaignsController extends Controller{
             $login_image = null;
             $welcome_image = null;
             $campaign_image = null;
-    
-            if ($request->hasFile('logo_image')) {
-                $logo_image = $request->file('logo_image')->store($campaignFolder, 'public');
-                $logo_image = 'storage/' . $logo_image;
+          
+            
+            if (!empty($request->logo_image)) {
+                $logo_image = saveBase64Image($request->logo_image, $campaignFolder);
             }
-    
-            if ($request->hasFile('login_image')) {
-                $login_image = $request->file('login_image')->store($campaignFolder, 'public');
-                $login_image = 'storage/' . $login_image;
+            
+            if (!empty($request->login_image)) {
+                $login_image = saveBase64Image($request->login_image, $campaignFolder);
             }
-    
-            if ($request->hasFile('welcome_image')) {
-                $welcome_image = $request->file('welcome_image')->store($campaignFolder, 'public');
-                $welcome_image = 'storage/' . $welcome_image;
+            
+            if (!empty($request->welcome_image)) {
+                $welcome_image = saveBase64Image($request->welcome_image, $campaignFolder);
             }
-    
-            if ($request->hasFile('campaign_image')) {
-                $campaign_image = $request->file('campaign_image')->store($campaignFolder, 'public');
-                $campaign_image = 'storage/' . $campaign_image;
+            
+            if (!empty($request->campaign_image)) {
+                $campaign_image = saveBase64Image($request->campaign_image, $campaignFolder);
             }
+            
     
             // Update campaign with image paths
             DB::table('campaigns')
@@ -214,6 +212,20 @@ class CampaignsController extends Controller{
    return response()->json($data);
     }
     }
+    function saveBase64Image($base64String, $folder = 'images') {
+        if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $matches)) {
+            $imageType = $matches[1]; // e.g., png, jpg
+            $imageBase64 = substr($base64String, strpos($base64String, ',') + 1);
+            $imageBase64 = base64_decode($imageBase64);
+    
+            $fileName = uniqid() . '.' . $imageType;
+            Storage::disk('public')->put("{$folder}/{$fileName}", $imageBase64);
+    
+            return "storage/{$folder}/{$fileName}";
+        }
+    
+        return null; // Invalid format
+    }
     public function get_campaigns(Request $request) {
         // Fetch campaigns
         $campaigns = DB::table('campaigns as cam')
@@ -335,41 +347,48 @@ class CampaignsController extends Controller{
         $login_image = null;
         $welcome_image = null;
         $campaign_image = null;
+      
 
-        if ($request->hasFile('logo_image')) {
-            $logo_image = $request->file('logo_image')->store($campaignFolder, 'public');
-            $logo_image = 'storage/' . $logo_image;
-
-            $update_data=DB::table('campaigns')
-            ->where('id','=',$request->id)
-            ->update(['logo_image'=>$logo_image]);
+        // Logo Image
+        if (!empty($request->logo_image)) {
+            $logo_image = saveBase64Image($request->logo_image, $campaignFolder);
+            if ($logo_image) {
+                DB::table('campaigns')
+                    ->where('id', $request->id)
+                    ->update(['logo_image' => $logo_image]);
+            }
         }
-
-        if ($request->hasFile('login_image')) {
-            $login_image = $request->file('login_image')->store($campaignFolder, 'public');
-            $login_image = 'storage/' . $login_image;
-
-            $update_data=DB::table('campaigns')
-            ->where('id','=',$request->id)
-            ->update(['login_image'=>$login_image]);
+        
+        // Login Image
+        if (!empty($request->login_image)) {
+            $login_image = saveBase64Image($request->login_image, $campaignFolder);
+            if ($login_image) {
+                DB::table('campaigns')
+                    ->where('id', $request->id)
+                    ->update(['login_image' => $login_image]);
+            }
         }
-
-        if ($request->hasFile('welcome_image')) {
-            $welcome_image = $request->file('welcome_image')->store($campaignFolder, 'public');
-            $welcome_image = 'storage/' . $welcome_image;
-            $update_data=DB::table('campaigns')
-            ->where('id','=',$request->id)
-            ->update(['welcome_image'=>$welcome_image]);
+        
+        // Welcome Image
+        if (!empty($request->welcome_image)) {
+            $welcome_image = saveBase64Image($request->welcome_image, $campaignFolder);
+            if ($welcome_image) {
+                DB::table('campaigns')
+                    ->where('id', $request->id)
+                    ->update(['welcome_image' => $welcome_image]);
+            }
         }
-
-        if ($request->hasFile('campaign_image')) {
-            $campaign_image = $request->file('campaign_image')->store($campaignFolder, 'public');
-            $campaign_image = 'storage/' . $campaign_image;
-            $update_data=DB::table('campaigns')
-            ->where('id','=',$request->id)
-            ->update(['campaign_image'=>$campaign_image]);
+        
+        // Campaign Image
+        if (!empty($request->campaign_image)) {
+            $campaign_image = saveBase64Image($request->campaign_image, $campaignFolder);
+            if ($campaign_image) {
+                DB::table('campaigns')
+                    ->where('id', $request->id)
+                    ->update(['campaign_image' => $campaign_image]);
+            }
         }
-
+        
 
         if($event_value[0]->title=="PREDICTION EVENT"){
             $team_a_image=null;
