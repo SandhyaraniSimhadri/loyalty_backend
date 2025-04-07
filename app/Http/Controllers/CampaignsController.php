@@ -83,19 +83,19 @@ class CampaignsController extends Controller{
           
             
             if (!empty($request->logo_image)) {
-                $logo_image = saveBase64Image($request->logo_image, $campaignFolder);
+                $logo_image = $this->saveBase64Image($request->logo_image, $campaignFolder);
             }
             
             if (!empty($request->login_image)) {
-                $login_image = saveBase64Image($request->login_image, $campaignFolder);
+                $login_image = $this->saveBase64Image($request->login_image, $campaignFolder);
             }
             
             if (!empty($request->welcome_image)) {
-                $welcome_image = saveBase64Image($request->welcome_image, $campaignFolder);
+                $welcome_image = $this->saveBase64Image($request->welcome_image, $campaignFolder);
             }
             
             if (!empty($request->campaign_image)) {
-                $campaign_image = saveBase64Image($request->campaign_image, $campaignFolder);
+                $campaign_image = $this->saveBase64Image($request->campaign_image, $campaignFolder);
             }
             
     
@@ -351,7 +351,7 @@ class CampaignsController extends Controller{
 
         // Logo Image
         if (!empty($request->logo_image)) {
-            $logo_image = saveBase64Image($request->logo_image, $campaignFolder);
+            $logo_image = $this->saveBase64Image($request->logo_image, $campaignFolder);
             if ($logo_image) {
                 DB::table('campaigns')
                     ->where('id', $request->id)
@@ -361,7 +361,7 @@ class CampaignsController extends Controller{
         
         // Login Image
         if (!empty($request->login_image)) {
-            $login_image = saveBase64Image($request->login_image, $campaignFolder);
+            $login_image =$this->saveBase64Image($request->login_image, $campaignFolder);
             if ($login_image) {
                 DB::table('campaigns')
                     ->where('id', $request->id)
@@ -371,7 +371,7 @@ class CampaignsController extends Controller{
         
         // Welcome Image
         if (!empty($request->welcome_image)) {
-            $welcome_image = saveBase64Image($request->welcome_image, $campaignFolder);
+            $welcome_image = $this->saveBase64Image($request->welcome_image, $campaignFolder);
             if ($welcome_image) {
                 DB::table('campaigns')
                     ->where('id', $request->id)
@@ -381,7 +381,7 @@ class CampaignsController extends Controller{
         
         // Campaign Image
         if (!empty($request->campaign_image)) {
-            $campaign_image = saveBase64Image($request->campaign_image, $campaignFolder);
+            $campaign_image = $this->saveBase64Image($request->campaign_image, $campaignFolder);
             if ($campaign_image) {
                 DB::table('campaigns')
                     ->where('id', $request->id)
