@@ -23,7 +23,20 @@ class CampaignsController extends Controller{
     {
     }
     
-
+    private function saveBase64Image($base64String, $folder = 'images') {
+        
+        if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $matches)) {
+            $imageType = $matches[1];
+            $imageBase64 = substr($base64String, strpos($base64String, ',') + 1);
+            $imageBase64 = base64_decode($imageBase64);
+    
+            $fileName = uniqid() . '.' . $imageType;
+            Storage::disk('public')->put("{$folder}/{$fileName}", $imageBase64);
+    
+            return "storage/{$folder}/{$fileName}";
+        }
+        return null;
+    }
     public function add_campaign(Request $request)
     {
         // return "hello:";
@@ -212,20 +225,7 @@ class CampaignsController extends Controller{
    return response()->json($data);
     }
     }
-    function saveBase64Image($base64String, $folder = 'images') {
-        if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $matches)) {
-            $imageType = $matches[1]; // e.g., png, jpg
-            $imageBase64 = substr($base64String, strpos($base64String, ',') + 1);
-            $imageBase64 = base64_decode($imageBase64);
-    
-            $fileName = uniqid() . '.' . $imageType;
-            Storage::disk('public')->put("{$folder}/{$fileName}", $imageBase64);
-    
-            return "storage/{$folder}/{$fileName}";
-        }
-    
-        return null; // Invalid format
-    }
+  
     public function get_campaigns(Request $request) {
         // Fetch campaigns
         $campaigns = DB::table('campaigns as cam')
