@@ -28,6 +28,7 @@ Route::post('gameUserLogin', 'UsersController@gameUserLogin');
 
 
 
+Route::post('add_company', 'CompanyController@add_company');
 
 Route::group(['middleware' => ['cors']], function () {
     Route::post('verify_user', 'UsersController@verify_user');
@@ -41,7 +42,6 @@ Route::group(['middleware' => ['cors']], function () {
     Route::post('check_user', 'UsersController@check_user');
     Route::post('set_password', 'UsersController@set_password');
 
-    Route::post('add_company', 'CompanyController@add_company');
     Route::post('get_single_company', 'CompanyController@get_single_company');
     Route::post('update_company', 'CompanyController@update_company');
     Route::post('delete_company', 'CompanyController@delete_company');
