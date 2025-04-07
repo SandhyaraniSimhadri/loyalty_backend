@@ -26,7 +26,6 @@ Route::post('ProfileInfo', 'UsersController@ProfileInfo');
 Route::post('userScore', 'UsersController@userScore');
 Route::post('gameUserLogin', 'UsersController@gameUserLogin');
 
-Route::post('add_campaign', 'CampaignsController@add_campaign');
 
 
 
@@ -63,6 +62,7 @@ Route::group(['middleware' => ['cors']], function () {
     Route::middleware('api_check')->get('get_users', 'UsersModuleController@get_users');
 
 
+    Route::post('add_campaign', 'CampaignsController@add_campaign');
     Route::post('get_single_campaign', 'CampaignsController@get_single_campaign');
     Route::middleware('api_check')->post('get_report', 'CampaignsController@get_report');
     Route::post('update_campaign', 'CampaignsController@update_campaign');

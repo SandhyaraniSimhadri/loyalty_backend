@@ -165,6 +165,9 @@ class CampaignsController extends Controller{
                             // Store only the relative path
                             $image = $filePath;
                         }
+                        else{
+                            $question['fileName']='';
+                        }
                 
                         // Insert question details into the database
                         $data = [
