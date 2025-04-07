@@ -26,14 +26,20 @@ class CampaignsController extends Controller{
 
     public function add_campaign(Request $request)
     {
+        // return "hello:";
+
+
         $tag_info = DB::table('campaigns')
-        ->where('campaign_tag', '=', $request->tag)
+        ->where('campaign_tag', '=', $request->campaign_tag)
         ->where('id', '!=', $request->id) // Exclude the current campaign
         ->get();
-        if ($tag_info->isEmpty()) {
-        
+// return $tag_info;
+        if ($tag_info->isEmpty() || $request->campaign_tag==null) {
+            // return "hello:";
+
         $image=null;
         $date = date('Y-m-d H:i:s');
+        // return $request;
       
         $data = array(
           
@@ -52,6 +58,7 @@ class CampaignsController extends Controller{
             );
 
             $aid= DB::table('campaigns')->insertGetId($data);
+            // return $aid;
           
             if($aid){
             $campaignFolder = "images/campaign_$aid";
@@ -144,7 +151,7 @@ class CampaignsController extends Controller{
             }
 
             if($event_value[0]->title=="QUIZ"){
-                return $request->questions;
+                // return $request->questions;
                 if ($request->questions) {
                     foreach ($request->questions as $question) {
                         $image = null;
@@ -204,6 +211,7 @@ class CampaignsController extends Controller{
     }
     else{
         $data = array('status' => true, 'msg' => 'This tag is already in use. Please choose a different one.','tag'=>'Duplicate');
+   return response()->json($data);
     }
     }
     public function get_campaigns(Request $request) {
@@ -291,10 +299,10 @@ class CampaignsController extends Controller{
     
     public function update_campaign(REQUEST $request){
         $tag_info = DB::table('campaigns')
-        ->where('campaign_tag', '=', $request->tag)
+        ->where('campaign_tag', '=', $request->campaign_tag)
         ->where('id', '!=', $request->id) // Exclude the current campaign
         ->get();
-        if ($tag_info->isEmpty()) {
+        if ($tag_info->isEmpty() || $request->campaign_tag==null || $request->campaign_tag=='') {
         
         $event_value = DB::table('events')
         ->where('id','=',$request->event_id)
@@ -450,6 +458,7 @@ class CampaignsController extends Controller{
         }
 
         if($event_value[0]->title=="QUIZ"){
+            // return "hi";
             $update_details=0;
             $update_id=0;
             $update_details=DB::table('quizzes')
@@ -537,8 +546,10 @@ class CampaignsController extends Controller{
             return response()->json($data);
         }}
         else{
-            $data = array('status' => true, 'msg' => 'This tag is already in use. Please choose a different one.','tag'=>'Duplicate');
-        }
+        
+        $data = array('status' => true, 'msg' => 'This tag is already in use. Please choose a different one.','tag'=>'Duplicate');
+        return response()->json($data);    
+    }
     }
     public function delete_campaign(REQUEST $request){
         $deleted_info=DB::table('campaigns')
