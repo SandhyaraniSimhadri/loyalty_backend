@@ -182,10 +182,13 @@ class PredictionsController extends Controller{
             ->orderBy('time_taken', 'asc')
             ->orderBy('u.created_at', 'asc')
             ->get();
-    
+            // return $participants;
         // Format participants with ranks
-        $participantsArray = $participants->map(function ($participant, $index) {
-            return [
+       
+        $campaign->self = null; // ← You forgot a semicolon here
+            // return $request;
+        $participantsArray = $participants->map(function ($participant, $index) use ($request, &$campaign) {
+            $data = [
                 'rank' => $index + 1,
                 'user_id' => $participant->user_id,
                 'user_name' => $participant->user_name,
@@ -195,7 +198,15 @@ class PredictionsController extends Controller{
                 'total_points' => $participant->total_points,
                 'time_taken' => $participant->time_taken,
             ];
+        
+            // Check if this participant is the logged-in user
+            if ($participant->user_id == $request->logged_id) {
+                $campaign->self = $data;
+            }
+        
+            return $data;
         })->toArray();
+        
     
         $campaign->participants = array_slice($participantsArray, 0, $request->input('limit', 10));
     
