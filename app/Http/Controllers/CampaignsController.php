@@ -61,6 +61,9 @@ class CampaignsController extends Controller{
             'terms_and_conditions' => $request->terms_and_conditions,
             'game_type' => $request->game_type,
             'description' => $request->description,
+            'login_text' => $request->login_text,
+            'welcome_text' => $request->welcome_text,
+
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'event_id' => $request->event_id,
@@ -332,6 +335,7 @@ class CampaignsController extends Controller{
             'terms_and_conditions' => $request->terms_and_conditions,
             'description' => $request->description,
             'login_text'=>$request->login_text,
+            'welcome_text'=>$request->welcome_text,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'company_id'=> $request->company_id,
