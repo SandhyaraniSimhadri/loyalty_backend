@@ -520,7 +520,8 @@ class CampaignsController extends Controller{
                     }
                 }
                 else{
-                    $image=$question['image'];
+                    $image = isset($question['image']) ? $question['image'] : null;
+
                 }
                     if($question['id']==0){
     
