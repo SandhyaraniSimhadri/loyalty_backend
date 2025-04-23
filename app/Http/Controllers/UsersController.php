@@ -687,7 +687,7 @@ class UsersController extends Controller{
                         'email' => $user_data->email,
                         'otp'=> $otp
                     ]  ;
-                    Mail::to('sandhyasimhadri999@gmail.com')->send(new ForgotPasswordMail($data));
+                    Mail::to($user_data->email)->send(new ForgotPasswordMail($data));
                           $data = array('status' => true, 'msg' => 'OTP sent','user_status'=>'existed','data'=>$user_data);
                     return response()->json($data);
                 }
