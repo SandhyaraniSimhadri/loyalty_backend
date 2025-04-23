@@ -534,7 +534,7 @@ class CampaignsController extends Controller{
                             'correct_answer' => $question['correct_answer'],
                             'campaign_id'=>$request->id,
                             'points'=>$question['points'],
-                            'file_name'=>$question['file_ame'],
+                           'file_name' => $question['file_name'] ?? null,
                             'image' => $image // Store only the relative path
                         );
             
