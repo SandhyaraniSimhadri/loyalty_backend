@@ -239,7 +239,7 @@ class UsersModuleController extends Controller{
             'type'=>1
         ];
         if($update_data){
-            mail::to('sandhyasimhadri999@gmail.com')->send(new Invitation($data));
+            mail::to($user_data->email)->send(new Invitation($data));
             $data = array('status' => true, 'msg' => 'Invitation sent successfully','data'=>$date);
             return response()->json($data);
             } 
