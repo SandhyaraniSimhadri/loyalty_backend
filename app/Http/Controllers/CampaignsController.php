@@ -498,7 +498,9 @@ class CampaignsController extends Controller{
                     $image = null;
                 
                     // Check if 'selectedFile' exists and is Base64
-                    if($question['updated']){
+                    if (isset($question['updated']) && $question['updated']) {
+                        // Your code here
+                                    
 
                     
                     if (!empty($question['selectedFile']) && preg_match('/^data:image\/(\w+);base64,/', $question['selectedFile'], $matches)) {
