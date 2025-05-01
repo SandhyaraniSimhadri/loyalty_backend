@@ -119,11 +119,7 @@ class CampaignsController extends Controller{
             ->where('id','=',$request->event_id)
             ->get();
             if($event_value[0]->title=="PREDICTION EVENT"){
-
-        
                 $games = json_decode($request->games, true);
-      
-
                 if($games){
                     $i=0;
                 foreach($games as $game){
@@ -164,7 +160,7 @@ class CampaignsController extends Controller{
               
             }
 
-            if($event_value[0]->title=="QUIZ"){
+            else if($event_value[0]->title=="QUIZ"){
                 // return $request->questions;
                 if ($request->questions) {
                     foreach ($request->questions as $question) {
@@ -210,6 +206,35 @@ class CampaignsController extends Controller{
                 
                 
               
+            }
+            else if($event_value[0]->title=="GAMES"){
+                $game_welcome_image = null;
+                $game_start_image = null;
+                $game_end_image = null;
+
+                if (!empty($request->game_welcome_image)) {
+                    $game_welcome_image = $this->saveBase64Image($request->game_welcome_image, $campaignFolder);
+                }
+                if (!empty($request->game_start_image)) {
+                    $game_start_image = $this->saveBase64Image($request->game_start_image, $campaignFolder);
+                }
+                if (!empty($request->game_end_image)) {
+                    $game_end_image = $this->saveBase64Image($request->game_end_image, $campaignFolder);
+                }
+                $data = array(
+          
+                    'game_url' => $request['game_url'],
+                    'game_welcome_text' => $request['game_welcome_text'],
+                    'game_welcome_image' => $game_welcome_image,
+                    'game_start_image' => $game_start_image,
+                    'game_end_image' => $game_end_image,
+                    'campaign_id'=>$aid,
+                    'selected_primary_color'=>$request['selected_primary_color'],
+                    'selected_secondary_color'=>$request['selected_secondary_color'],
+
+                    );
+        
+                    $gid= DB::table('html_games')->insertGetId($data);
             }
 
 

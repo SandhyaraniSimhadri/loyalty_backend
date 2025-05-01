@@ -589,36 +589,66 @@ class UsersController extends Controller{
         }
         public function userScore(Request $request) {
             $token = $request->header('Authorization');
-            
-            if ($token) {
-                $user_id = 1;
-                $userAttempts=2;
+            $user_data=DB::table('users')
+            ->where('token',$token)
+            ->first();
+            if ($user_data) {
+                // $user_id = 1;
+                // $userAttempts=2;
                
-                $totalAttempts = DB::table('users_score')
+                $user_score = DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
-                    ->count();
+                    ->where('user_id',$user_data->id)
+                    ->first();
                 //     return $records;
         
-               $userAttempts=$userAttempts-$totalAttempts;
+              if($user_score){
         
-                if ($userAttempts >= 0) {
+                if ($user_score->score<$request->score) {
+                   
 
+                    $updated_data=DB::table('campaign_participants')
+                    ->where('game_id', $request->input('gameKey'))
+                    ->where('user_id',$user_data->id)
+                    ->update([
+                        'points'=>$request->score
+                    ]);
+
+                    $updated_data=DB::table('users')
+                    ->where('gameKey', $request->input('gameKey'))
+                    ->where('user_id',$user_data->id)
+                    ->update([
+                        'score'=>$request->score
+                    ]);
+
+
+                }
+
+                }
+                else{
                         $data = array(
-                            'user_id' => 1,
+                            'user_id' => $user_data->id,
                             'gameKey' => $request->input('gameKey'),
                             'score' => $request->score,
                             );
+
+                            $data1 = array(
+                                'user_id' => $user_data->id,
+                                'game_id' => $request->input('gameKey'),
+                                'points' => $request->score,
+                                'campaign_id' => $request->campaign_id,
+
+                                );
                 
                         $gid= DB::table('users_score')->insertGetId($data);
+                        $gid= DB::table(' campaign_participants')->insertGetId($data1);
+
                         
                         $response = ['status' => false, 'msg' => "Highscore updated successfully", 'leftAttempts' => $userAttempts];
                         return response()->json($response);
                   
-                } else {
-                    // No attempts left
-                    $response = ['status' => false, 'msg' => "No attempts left", 'leftAttempts' => 0];
-                    return response()->json($response);
                 }
+                
             } else {
                 $response = ['status' => false, 'msg' => "Invalid token"];
                 return response()->json($response);

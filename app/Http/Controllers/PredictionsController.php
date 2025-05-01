@@ -233,6 +233,12 @@ class PredictionsController extends Controller{
                 ->select('id', 'question', 'response_a', 'response_b', 'response_c', 'response_d', 'points', 'correct_answer', 'image', 'file_name')
                 ->get();
         }
+        elseif ($campaign->event_title === "GAMES") {
+            $campaign->html_games = DB::table('html_games')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->get();
+        }
     
         return response()->json(['status' => true, 'data' => $campaign]);
     }
