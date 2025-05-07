@@ -235,6 +235,46 @@ class CampaignsController extends Controller{
                     );
         
                     $gid= DB::table('html_games')->insertGetId($data);
+
+                    if ($request->prizes) {
+                        foreach ($request->prizes as $prize) {
+                            $image = null;
+                    
+                            // Check if 'selectedFile' exists and is Base64
+                            if (!empty($prize['selectedFile']) && preg_match('/^data:image\/(\w+);base64,/', $prize['selectedFile'], $matches)) {
+                                $imageType = $matches[1]; // Extract image type (e.g., jpg, png)
+                                $imageBase64 = substr($prize['selectedFile'], strpos($prize['selectedFile'], ',') + 1);
+                                $imageBase64 = base64_decode($imageBase64); // Decode Base64
+                    
+                                // Generate unique file name
+                                $fileName = uniqid() . '.' . $imageType;
+                                $filePath = "storage/images/" . $fileName;
+                    
+                                // Store the image in storage/app/public/images
+                                Storage::disk('public')->put("images/" . $fileName, $imageBase64);
+                    
+                                // Store only the relative path
+                                $image = $filePath;
+                            }
+                            else{
+                                $prize['fileName']='';
+                            }
+                    
+                            // Insert question details into the database
+                            $data = [
+                                'prize_header' => $prize['prize_header'],
+                                'prize_desc' => $prize['prize_desc'],
+                                'campaign_id' => $aid,
+                                'file_name'=>$prize['fileName'],
+                                'image' => $image // Store only the relative path
+                            ];
+                    
+                            DB::table('prizes')->insert($data);
+                        }
+                    }
+                
+                    
+
             }
 
 
@@ -308,7 +348,6 @@ class CampaignsController extends Controller{
             ->orderBy('cam.created_at', 'DESC')
             ->get();
     
-        // Fetch games associated with each campaign
         foreach ($campaigns as $campaign) {
             if($campaign->event_title=='PREDICTION EVENT'){
                 $games = DB::table('games')
@@ -317,20 +356,27 @@ class CampaignsController extends Controller{
                     ->select('id', 'name', 'team_a', 'team_b','points')
                     ->get();
         
-                // Add games to the campaign object
                 $campaign->games = $games;
             }
-    
-                if($campaign->event_title=='QUIZ'){
+            if($campaign->event_title=='QUIZ'){
                     $quizzes = DB::table('quizzes')
                         ->where('campaign_id', '=', $campaign->id)
                         ->where('deleted', '=', 0)
                         ->select('id', 'question', 'response_a',  'response_b',  'response_c', 'response_d', 'points','correct_answer','image','file_name')
                         ->get();
-            
-                    
-                    $campaign->quizzes = $quizzes;}
-    
+                    $campaign->quizzes = $quizzes;
+            }
+            if($campaign->event_title=='GAMES'){
+                $campaign->html_games = DB::table('html_games')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->get();
+
+            $campaign->prizes = DB::table('prizes')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->get();
+            }
 
         }
     
@@ -587,6 +633,115 @@ class CampaignsController extends Controller{
                 }}
           
                 
+        }
+
+
+        if($event_value[0]->title=="GAMES"){
+            // return "hi";
+            $update_details=0;
+            $update_id=0;
+            $game_welcome_image = null;
+            $game_start_image = null;
+            $game_end_image = null;
+
+            if (!empty($request->html_games->game_welcome_image)) {
+                $game_welcome_image = $this->saveBase64Image($request->html_games['game_welcome_image'], $campaignFolder);
+            }
+            else{
+                $game_welcome_image=$request->html_games['game_welcome_image'];
+            }
+            if (!empty($request->html_games->game_start_image)) {
+                $game_start_image = $this->saveBase64Image($request->html_games['game_start_image'], $campaignFolder);
+            }else{
+                $game_start_image=$request->html_games['game_start_image'];
+            }
+            if (!empty($request->html_games->game_end_image)) {
+                $game_end_image = $this->saveBase64Image($request->html_games['game_end_image'], $campaignFolder);
+            }
+            else{
+                $game_end_image=$request->html_games['game_end_image'];
+            }
+            $update_details=DB::table('html_games')
+            ->where('campaign_id','=',$request->id)
+            ->update([
+                'game_url' => $request['html_games']['game_url'],
+                            'game_welcome_text' => $request['html_games']['game_welcome_text'],
+                            'game_welcome_image' => $game_welcome_image,
+                            'game_start_image' => $game_start_image,
+                            'game_end_image' => $game_end_image,
+                            'selected_primary_color'=>$request['html_games']['selected_primary_color'],
+                            'selected_secondary_color'=>$request['html_games']['selected_secondary_color'],
+            ]);
+
+            $update_details=DB::table('prizes')
+            ->where('campaign_id','=',$request->id)
+            ->update([
+               'deleted'=>1   ]);
+
+            // $questions = json_decode($request->questions, true);
+
+
+            if($request->prizes){
+                foreach($request->prizes as $prize){
+                    // return $game;
+                    $image = null;
+                
+                    // Check if 'selectedFile' exists and is Base64
+                    if (isset($prize['updated']) && $prize['updated']) {
+                        // Your code here
+                                    
+
+                    
+                    if (!empty($prize['selectedFile']) && preg_match('/^data:image\/(\w+);base64,/', $prize['selectedFile'], $matches)) {
+                        $imageType = $matches[1]; // Extract image type (e.g., jpg, png)
+                        $imageBase64 = substr($prize['selectedFile'], strpos($prize['selectedFile'], ',') + 1);
+                        $imageBase64 = base64_decode($imageBase64); // Decode Base64
+            
+                        // Generate unique file name
+                        $file_name = uniqid() . '.' . $imageType;
+                        $filePath = "storage/images/" . $file_name;
+            
+                        // Store the image in storage/app/public/images
+                        Storage::disk('public')->put("images/" . $file_name, $imageBase64);
+            
+                        // Store only the relative path
+                        $image = $filePath;
+                    }
+                }
+                else{
+                    $image = isset($prize['image']) ? $prize['image'] : null;
+
+                }
+
+               
+                    if($prize['id']==0){
+
+    
+                        $data = [
+                            'prize_header' => $prize['prize_header'],
+                            'prize_desc' => $prize['prize_desc'],
+                            'campaign_id' => $request->id,
+                            'file_name'=>$prize['file_name'],
+                            'image' => $image 
+                        ];
+                
+                       
+            
+                        $id= DB::table('prizes')->insertGetId($data);}
+                    else{
+                        // return $question['correct_answer'];
+                        $update_details=DB::table('prizes')
+                        ->where('id','=',$prize['id'])
+                        ->where('campaign_id','=',$request->id)
+                        ->update([
+                            'prize_header' => $prize['prize_header'],
+                            'prize_desc' => $prize['prize_desc'],
+                            'file_name'=>$prize['file_name'],
+                            'image' => $image,
+                            'deleted' => 0,
+                        ]);
+                    }
+                }}       
         }
         if($update_data || $update_details || $update_id){
             $data = array('status' => true, 'msg' => 'Campaign details updated successfully','tag'=>'No Duplicate');

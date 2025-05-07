@@ -238,6 +238,11 @@ class PredictionsController extends Controller{
                 ->where('campaign_id', $campaign->id)
                 ->where('deleted', 0)
                 ->get();
+
+            $campaign->prizes = DB::table('prizes')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->get();
         }
     
         return response()->json(['status' => true, 'data' => $campaign]);
