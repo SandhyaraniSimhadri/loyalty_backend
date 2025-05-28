@@ -114,7 +114,7 @@ class UsersController extends Controller{
                 );
     
                 $gid= DB::table('users')->insertGetId($data);
-                $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$data);
+                $data = array('status' => true, 'msg' => 'Registered successfully please signin!','user_status'=>'new','data'=>$data);
                 return response()->json($data);
             }
         }
