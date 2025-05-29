@@ -475,7 +475,7 @@ class UsersController extends Controller{
                     'campaign_id'=>$request->campaign_id);
                     $pid= DB::table('campaign_users')->insertGetId($data);
                 }
-                $data = array('status' => true, 'msg' => 'Registered successfull!','user_status'=>'new','data'=>$data,'leftAttempts'=>0);
+                $data = array('status' => true, 'msg' => 'Registered successfully please signin!','user_status'=>'new','data'=>$data,'leftAttempts'=>0);
                 return response()->json($data);
             }
         }

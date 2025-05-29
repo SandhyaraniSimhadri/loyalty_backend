@@ -70,13 +70,17 @@ class PredictionsController extends Controller{
             if($quiz['correct_answer']==$predicted_answer){
                 $points=$quiz['points'];
             }
-            if($request->points_calc=="true"){
-                DB::table('campaign_participants')
+            // return $request->points_calc; 
+            if($request->points_calc=="1"){
+              $updatedd=  DB::table('campaign_participants')
                 ->where('deleted', '=', 0)
                 ->where('predicted_answer','=',$predicted_answer)
                 ->where('campaign_id', $request->campaign_id)
+                ->where('user_id','=', $request['logged_id'])
                 ->where('game_id', $quiz['id'])
-                ->update(['points' => $points]);}
+                ->update(['points' => $points]);
+            // return $updatedd;
+        }
             $index=$index+1;}
         }
            
