@@ -588,11 +588,12 @@ class UsersController extends Controller{
             }
         }
         public function userScore(Request $request) {
+            return "hi";
             $token = $request->header('Authorization');
             $user_data=DB::table('users')
             ->where('token',$token)
             ->first();
-            return $user_data;
+            // return $user_data;
             if ($user_data) {
                 // $user_id = 1;
                 // $userAttempts=2;
