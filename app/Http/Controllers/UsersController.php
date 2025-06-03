@@ -592,6 +592,7 @@ class UsersController extends Controller{
             $user_data=DB::table('users')
             ->where('token',$token)
             ->first();
+            return $user_data;
             if ($user_data) {
                 // $user_id = 1;
                 // $userAttempts=2;
