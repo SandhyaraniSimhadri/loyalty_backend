@@ -651,10 +651,11 @@ class UsersController extends Controller{
                         $gid= DB::table(' campaign_participants')->insertGetId($data1);
 
                         
-                        $response = ['status' => true, 'msg' => "Highscore updated successfully", 'leftAttempts' => $userAttempts];
-                        return response()->json($response);
+                      
                   
                 }
+                  $response = ['status' => true, 'msg' => "Highscore updated successfully", 'leftAttempts' => $userAttempts];
+                        return response()->json($response);
                 
             } else {
                 $response = ['status' => false, 'msg' => "Invalid token"];
