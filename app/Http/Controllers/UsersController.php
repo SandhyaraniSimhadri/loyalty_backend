@@ -599,6 +599,7 @@ class UsersController extends Controller{
                 $user_score = DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
                     ->where('user_id',$user_data->id)
+                     ->where('game_id', $request->input('game_id'))
                     ->where('campaign_id', $request->campaign_id)
                     ->first();
                 //     return $records;
@@ -609,7 +610,7 @@ class UsersController extends Controller{
                    
 
                     $updated_data=DB::table('campaign_participants')
-                    ->where('game_id', $request->input('gameKey'))
+                    ->where('game_id', $request->input('game_id'))
                     ->where('user_id',$user_data->id)
                     ->where('campaign_id', $request->campaign_id)
                     ->update([
@@ -618,6 +619,7 @@ class UsersController extends Controller{
 
                     $updated_data=DB::table('users_score')
                     ->where('gameKey', $request->input('gameKey'))
+                       ->where('game_id', $request->input('game_id'))
                     ->where('user_id',$user_data->id)
                     ->where('campaign_id', $request->campaign_id)
                     ->update([
@@ -632,7 +634,8 @@ class UsersController extends Controller{
                         $data = array(
                             'user_id' => $user_data->id,
                             'gameKey' => $request->input('gameKey'),
-                                    'game_id' => $request->input('game_id'),
+                             'game_id' => $request->input('game_id'),
+                            'campaign_id' => $request->campaign_id,
                             'score' => $request->score,
                             );
 
