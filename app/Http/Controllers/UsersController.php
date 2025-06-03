@@ -651,7 +651,7 @@ class UsersController extends Controller{
                         $gid= DB::table(' campaign_participants')->insertGetId($data1);
 
                         
-                        $response = ['status' => false, 'msg' => "Highscore updated successfully", 'leftAttempts' => $userAttempts];
+                        $response = ['status' => true, 'msg' => "Highscore updated successfully", 'leftAttempts' => $userAttempts];
                         return response()->json($response);
                   
                 }
