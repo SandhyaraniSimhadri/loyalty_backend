@@ -644,19 +644,19 @@ class CampaignsController extends Controller{
             $game_start_image = null;
             $game_end_image = null;
 
-            if (!empty($request->html_games->game_welcome_image)) {
-                $game_welcome_image = $this->saveBase64Image($request->html_games['game_welcome_image'], $campaignFolder);
+            if (!empty($request->game_welcome_image)) {
+                $game_welcome_image = $this->saveBase64Image($request->game_welcome_image, $campaignFolder);
             }
             else{
                 $game_welcome_image=$request->html_games['game_welcome_image'];
             }
-            if (!empty($request->html_games->game_start_image)) {
-                $game_start_image = $this->saveBase64Image($request->html_games['game_start_image'], $campaignFolder);
+            if (!empty($request->game_start_image)) {
+                $game_start_image = $this->saveBase64Image($request->game_start_image, $campaignFolder);
             }else{
                 $game_start_image=$request->html_games['game_start_image'];
             }
-            if (!empty($request->html_games->game_end_image)) {
-                $game_end_image = $this->saveBase64Image($request->html_games['game_end_image'], $campaignFolder);
+            if (!empty($request->game_end_image)) {
+                $game_end_image = $this->saveBase64Image($request->game_end_image, $campaignFolder);
             }
             else{
                 $game_end_image=$request->html_games['game_end_image'];

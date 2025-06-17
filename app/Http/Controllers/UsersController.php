@@ -653,13 +653,12 @@ class UsersController extends Controller{
         DB::table('campaign_participants')->insert($participantData);
     }
 
-    // You can calculate $userAttempts if needed here
-    $userAttempts = 0; // Dummy value
+  
 
     return response()->json([
         'status' => true,
         'msg' => 'Highscore updated successfully',
-        'leftAttempts' => $userAttempts
+     
     ]);
 }
 
