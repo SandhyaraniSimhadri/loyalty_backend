@@ -119,7 +119,7 @@ class CampaignsController extends Controller{
             ->where('id','=',$request->event_id)
             ->get();
             if($event_value[0]->title=="PREDICTION EVENT"){
-                $games = json_decode($request->games, true);
+                $games = $request->games;
                 if($games){
                     $i=0;
                 foreach($games as $game){
@@ -353,7 +353,7 @@ class CampaignsController extends Controller{
                 $games = DB::table('games')
                     ->where('campaign_id', '=', $campaign->id)
                     ->where('deleted', '=', 0)
-                    ->select('id', 'name', 'team_a', 'team_b','points')
+                    ->select('id', 'name', 'team_a', 'team_b','points','game_start_date','game_end_date','game_start_time','game_end_time')
                     ->get();
         
                 $campaign->games = $games;
@@ -486,25 +486,32 @@ class CampaignsController extends Controller{
         ->update([
             'deleted' => 1,
         ]);
-        $games = json_decode($request->games, true);
+        $games = $request->games;
         if($games){
             foreach($games as $game){
 
                 $team_a_image=null;
                 $team_b_image=null;
-              
-                if ($request->hasFile("team_a_image_{$i}")) {
-                    $team_a_image = $request->file("team_a_image_{$i}")->store('images', 'public');
-                    $team_a_image = 'storage/' . $team_a_image;
+                // return $game->team_a_image;
+                if ($request->hasFile("team_a_image")) {
+                    $team_a_image_path = $request->file("team_a_image")->store('images', 'public');
+                    $team_a_image = 'storage/' . $team_a_image_path;
                 } else {
-                    $team_a_image = $request->input("team_a_image_{$i}"); // Use input() for dynamically referenced fields
+                    $inputA = $request->input("team_a_image");
+                    if ($inputA && Str::startsWith($inputA, 'data:image')) {
+                        $team_a_image = storeBase64Image($inputA, 'team_a');
+                    }
                 }
-                
-                if ($request->hasFile("team_b_image_{$i}")) {
-                    $team_b_image = $request->file("team_b_image_{$i}")->store('images', 'public');
-                    $team_b_image = 'storage/' . $team_b_image;
+
+                // Handle team B image
+                if ($request->hasFile("team_b_image")) {
+                    $team_b_image_path = $request->file("team_b_image")->store('images', 'public');
+                    $team_b_image = 'storage/' . $team_b_image_path;
                 } else {
-                    $team_b_image = $request->input("team_b_image_{$i}"); // Use input() for dynamically referenced fields
+                    $inputB = $request->input("team_b_image");
+                    if ($inputB && Str::startsWith($inputB, 'data:image')) {
+                        $team_b_image = storeBase64Image($inputB, 'team_b');
+                    }
                 }
                 
                 // return $game;
@@ -757,6 +764,23 @@ class CampaignsController extends Controller{
         return response()->json($data);    
     }
     }
+    function storeBase64Image($base64_image, $prefix = 'image') {
+    $image_parts = explode(";base64,", $base64_image);
+    if (count($image_parts) !== 2) {
+        return null; // invalid format
+    }
+
+    $image_type_aux = explode("image/", $image_parts[0]);
+    $image_type = $image_type_aux[1] ?? 'png';
+    $image_base64 = base64_decode($image_parts[1]);
+
+    $file_name = $prefix . '_' . time() . '.' . $image_type;
+    $file_path = 'images/' . $file_name;
+
+    Storage::disk('public')->put($file_path, $image_base64);
+
+    return 'storage/' . $file_path;
+}
     public function delete_campaign(REQUEST $request){
         $deleted_info=DB::table('campaigns')
         ->where('id','=',$request->id)

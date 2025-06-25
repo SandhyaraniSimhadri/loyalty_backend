@@ -30,17 +30,19 @@ class PredictionsController extends Controller{
         // return $request;
         $date = date('Y-m-d H:i:s');
         $index = 0;
-        if($request->type==1){
-            foreach($request->game as $game)
+        // return
+        if($request->type==1)
+        {
+           
         $data = array(
                     'user_id' => $request['logged_id'],
                     'campaign_id' =>  $request->campaign_id,
-                    'game_id' =>  $game['id'],
-                    'predicted_answer'=> $request->selected_winners[$index]
+                    'game_id' =>  $request->game_id,
+                    'predicted_answer'=> $request->winner_selected
                     );
                 
             $pid= DB::table('campaign_participants')->insertGetId($data);
-        }
+                }
         if($request->type==2){
             
             $data1 = array(
@@ -64,7 +66,7 @@ class PredictionsController extends Controller{
                     'game_id' =>  $quiz['id'],
                     'predicted_answer'=> $predicted_answer
                     );
-                
+                // return $data;
             $pid= DB::table('campaign_participants')->insertGetId($data);
             $points=0;
             if($quiz['correct_answer']==$predicted_answer){
