@@ -25,7 +25,10 @@ class UsersController extends Controller{
     public function __construct()
     {
     }
-   
+   public function userScore(Request $request)
+{
+    return response()->json(['status' => true, 'msg' => 'controller reached']);
+}
 
     public function  check_user(Request $request)
     {
@@ -587,7 +590,7 @@ class UsersController extends Controller{
                 return json_encode($response);
             }
         }
-       public function userScore(Request $request)
+       public function userScore1(Request $request)
 {
     $token = $request->header('Authorization');
 

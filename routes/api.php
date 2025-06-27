@@ -27,7 +27,7 @@ Route::post('reset_password', 'UsersController@reset_password');
 
 
 Route::post('ProfileInfo', 'UsersController@ProfileInfo');
-Route::post('userScore', 'UsersController@userScore');
+
 Route::post('gameUserLogin', 'UsersController@gameUserLogin');
 Route::post('verify_user', 'UsersController@verify_user');
 
@@ -35,6 +35,7 @@ Route::post('verify_user', 'UsersController@verify_user');
 
 
 Route::group(['middleware' => ['cors']], function () {
+    Route::post('userScore', 'UsersController@userScore');
     Route::post('set_registration', 'UsersController@set_registration');
     Route::middleware('api_check')->post('update_user_password', 'UsersController@update_user_password');
     Route::middleware('api_check')->post('update_social_media_account', 'UsersController@update_social_media_account');
