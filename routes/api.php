@@ -32,7 +32,7 @@ Route::post('gameUserLogin', 'UsersController@gameUserLogin');
 Route::post('verify_user', 'UsersController@verify_user');
 
 
-    Route::get('userScore', 'UsersController@userScore');
+    Route::post('userScore', 'UsersController@userScore');
 
 
 Route::group(['middleware' => ['cors']], function () {
