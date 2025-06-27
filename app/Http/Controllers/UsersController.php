@@ -590,9 +590,10 @@ class UsersController extends Controller{
        public function userScore(Request $request)
         {
     $token = $request->header('Authorization');
-    return "hi";
+    // return "hi";
     // Get user by token
     $user_data = DB::table('users')->where('token', $token)->first();
+    return $user_data;
 
     if (!$user_data) {
         return response()->json([
