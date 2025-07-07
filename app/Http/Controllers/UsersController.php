@@ -25,10 +25,10 @@ class UsersController extends Controller{
     public function __construct()
     {
     }
-//    public function userScore(Request $request)
-// {
-//     return response()->json(['status' => true, 'msg' => 'controller reached']);
-// }
+   public function userScore(Request $request)
+{
+    return response()->json(['status' => true, 'msg' => 'controller reached']);
+}
 
     public function  check_user(Request $request)
     {
@@ -590,13 +590,13 @@ class UsersController extends Controller{
                 return json_encode($response);
             }
         }
-       public function userScore(Request $request)
+       public function userScore1(Request $request)
 {
     $token = $request->header('Authorization');
 
     // Get user by token
     $user_data = DB::table('users')->where('token', $token)->first();
-    return $request;
+
     if (!$user_data) {
         return response()->json([
             'status' => false,
