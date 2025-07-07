@@ -596,7 +596,7 @@ class UsersController extends Controller{
 
     // Get user by token
     $user_data = DB::table('users')->where('token', $token)->first();
-
+    return $request;
     if (!$user_data) {
         return response()->json([
             'status' => false,
