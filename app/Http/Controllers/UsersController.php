@@ -27,6 +27,7 @@ class UsersController extends Controller{
     }
    public function userScore(Request $request)
 {
+    return "hi";
     return response()->json(['status' => true, 'msg' => 'controller reached']);
 }
 
