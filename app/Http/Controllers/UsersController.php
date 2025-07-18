@@ -592,6 +592,7 @@ class UsersController extends Controller{
         }
        public function userScore(Request $request)
 {
+    // return "hi";
     $token = $request->header('Authorization');
 
     // Get user by token

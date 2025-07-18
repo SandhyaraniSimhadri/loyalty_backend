@@ -231,6 +231,7 @@ class CampaignsController extends Controller{
                     'campaign_id'=>$aid,
                     'selected_primary_color'=>$request['selected_primary_color'],
                     'selected_secondary_color'=>$request['selected_secondary_color'],
+                    'selected_page_color'=>$request['selected_page_color'],
 
                     );
         
@@ -678,6 +679,7 @@ class CampaignsController extends Controller{
                             'game_end_image' => $game_end_image,
                             'selected_primary_color'=>$request['html_games']['selected_primary_color'],
                             'selected_secondary_color'=>$request['html_games']['selected_secondary_color'],
+                            'selected_page_color'=>$request['html_games']['selected_page_color'],
             ]);
 
             $update_details=DB::table('prizes')
