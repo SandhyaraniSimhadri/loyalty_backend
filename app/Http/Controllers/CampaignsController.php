@@ -232,7 +232,7 @@ class CampaignsController extends Controller{
                     'selected_primary_color'=>$request['selected_primary_color'],
                     'selected_secondary_color'=>$request['selected_secondary_color'],
                     'selected_page_color'=>$request['selected_page_color'],
-                      'selected_welcomepage_button_color'=>$request['selected_welcomepage_button_color'],
+                    'selected_welcomepage_button_color'=>$request['selected_welcomepage_button_color'],
                     
 
                     );
