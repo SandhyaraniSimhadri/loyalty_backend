@@ -183,7 +183,7 @@ class PredictionsController extends Controller{
             ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
             ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
             ->where('u.deleted', 0)
-            ->where('u.company_id','!=',0)
+            ->where('u.company_id','=',0)
             ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken')
             ->orderBy('total_points', 'desc')
             ->orderBy('time_taken', 'asc')
