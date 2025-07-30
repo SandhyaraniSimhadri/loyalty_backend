@@ -482,42 +482,52 @@ class UsersController extends Controller{
                 return response()->json($data);
             }
         }
-        public function update_user_info(REQUEST $request){
-            // return $request;
-            $image=null;
-            if ($request->hasFile('image')) {
-                // return $request->hasFile('homeTeamLogo')
-                $image = $request->file('image')->store('images', 'public');
-                $image = 'storage/'.$image;
-                $update_data_image=DB::table('users')
-                ->where('id','=',$request->id)
-                ->update(['avatar'=>$image]);
-                // return $update_data;
-            }
-            if($request->name=='null'){
-                $request->name='';
-            }
-            $update_data=DB::table('users')
-            ->where('id','=',$request->id)
-            ->update([
-                'user_name' => $request->user_name,
-                'name' => $request->name,
-                'mobile_no' => $request->phone_number,
-                'email' => $request->email
-                
-            ]);
-          
-         
-           
-            if($update_data || $update_data_image){
-                $data = array('status' => true,'data'=>$image, 'msg' => 'Details updated successfully');
-                return response()->json($data);
-                } 
-            else {
-                $data = array('status' => false, 'msg' => 'Failed');
-                return response()->json($data);
-            }
-        }
+      public function update_user_info(Request $request)
+{
+    $image = null;
+
+    // Validate image if present
+    if ($request->hasFile('image')) {
+        $request->validate([
+            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $imagePath = $request->file('image')->store('images', 'public');
+        $image = 'storage/' . $imagePath;
+    }
+
+    // Clean name input
+    $name = $request->name !== 'null' ? $request->name : '';
+
+    // Prepare update data
+    $data = [
+        'user_name' => $request->user_name,
+        'name' => $name,
+        'mobile_no' => $request->phone_number,
+        'email' => $request->email
+    ];
+
+    if ($image) {
+        $data['avatar'] = $image;
+    }
+
+    // Update the user
+    $updated = DB::table('users')->where('id', $request->id)->update($data);
+
+    if ($updated) {
+        return response()->json([
+            'status' => true,
+            'data' => $image,
+            'msg' => 'Details updated successfully'
+        ]);
+    } else {
+        return response()->json([
+            'status' => false,
+            'msg' => 'Failed'
+        ]);
+    }
+}
+
         public function update_user_password(Request $request)
         {
             $current_date_time = date('Y-m-d H:i:s');
