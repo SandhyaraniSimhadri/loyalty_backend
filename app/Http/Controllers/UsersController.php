@@ -489,7 +489,7 @@ class UsersController extends Controller{
     // Validate image if present
     if ($request->hasFile('image')) {
         $request->validate([
-            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            'image' => 'image|mimes:jpeg,png,jpg,gif|max:5120'
         ]);
 
         $imagePath = $request->file('image')->store('images', 'public');
