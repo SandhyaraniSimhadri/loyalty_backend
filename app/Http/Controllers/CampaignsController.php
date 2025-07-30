@@ -232,6 +232,9 @@ class CampaignsController extends Controller{
                     'selected_primary_color'=>$request['selected_primary_color'],
                     'selected_secondary_color'=>$request['selected_secondary_color'],
                     'selected_page_color'=>$request['selected_page_color'],
+
+                      'selected_startpage_color'=>$request['selected_startpage_color'],
+                        'selected_overpage_color'=>$request['selected_overpage_color'],
                     'selected_welcomepage_button_color'=>$request['selected_welcomepage_button_color'],
                     
 
@@ -682,6 +685,9 @@ class CampaignsController extends Controller{
                             'selected_primary_color'=>$request['html_games']['selected_primary_color'],
                             'selected_secondary_color'=>$request['html_games']['selected_secondary_color'],
                             'selected_page_color'=>$request['html_games']['selected_page_color'],
+                            'selected_startpage_color'=>$request['html_games']['selected_startpage_color'],
+                            'selected_overpage_color'=>$request['html_games']['selected_overpage_color'],
+
                             'selected_welcomepage_button_color'=>$request['html_games']['selected_welcomepage_button_color'],
 
             ]);
