@@ -482,24 +482,24 @@ class UsersController extends Controller{
                 return response()->json($data);
             }
         }
-      public function update_user_info(Request $request)
+public function update_user_info(Request $request)
 {
     $image = null;
 
-    // Validate image if present
     if ($request->hasFile('image')) {
         $request->validate([
             'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+        ], [
+            'image.max' => 'The image must be below 2MB.',
+            'image.mimes' => 'Only jpeg, png, jpg, and gif formats are allowed.'
         ]);
 
         $imagePath = $request->file('image')->store('images', 'public');
         $image = 'storage/' . $imagePath;
     }
 
-    // Clean name input
     $name = $request->name !== 'null' ? $request->name : '';
 
-    // Prepare update data
     $data = [
         'user_name' => $request->user_name,
         'name' => $name,
@@ -511,7 +511,6 @@ class UsersController extends Controller{
         $data['avatar'] = $image;
     }
 
-    // Update the user
     $updated = DB::table('users')->where('id', $request->id)->update($data);
 
     if ($updated) {
@@ -527,6 +526,8 @@ class UsersController extends Controller{
         ]);
     }
 }
+
+
 
         public function update_user_password(Request $request)
         {
