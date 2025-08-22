@@ -81,6 +81,9 @@ Route::group(['middleware' => ['cors']], function () {
 
 
     Route::middleware('api_check')->post('get_prediction_details', 'PredictionsController@get_prediction_details');
+    Route::middleware('api_check')->post('get_single_prediction_details', 'PredictionsController@get_single_prediction_details');
+
+    
     Route::middleware('api_check')->post('add_prediction_winner', 'PredictionsController@add_prediction_winner');
     Route::post('send_invitation','UsersModuleController@send_invitation');
 });

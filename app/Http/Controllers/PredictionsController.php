@@ -105,66 +105,74 @@ class PredictionsController extends Controller{
         }
 
     }
-    public function get_prediction_details(Request $request) {
-        $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
-    
-        if ($request->has('campaign_id')) {
-            $campaign_data = DB::table('campaigns as c')
-                ->leftJoin('users_campaigns_timetaken as uc', function ($join) use ($request) {
-                    $join->on('c.id', '=', 'uc.campaign_id')
-                        ->where('uc.user_id', '=', $request['logged_id']);
-                })
-                ->where('c.deleted', 0)
-                ->where('c.id', $request['campaign_id'])
-                ->where('c.end_date', '>=', now())
-                ->select('c.*', 'uc.time_taken')
-                ->first();
-        } else {
-            $user_linked = DB::table('users as u')
-                ->leftJoin('campaign_users as c', 'u.id', '=', 'c.user_id')
-                ->where('u.id', $request['logged_id'])
-                ->where(function ($query) {
-                    $query->where('u.deleted', 0)->orWhereNull('u.deleted');
-                })
-                ->select('u.*', 'c.*')
-                ->orderByDesc('u.created_at')
-                ->first();
-    
-            if (!$user_linked) {
-                return response()->json(['status' => true, 'data' => []]);
-            }
-    
-            $campaign_data = DB::table('campaigns as c')
-                ->leftJoin('users_campaigns_timetaken as uc', function ($join) use ($request) {
-                    $join->on('c.id', '=', 'uc.campaign_id')
-                        ->where('uc.user_id', '=', $request['logged_id']);
-                })
-                ->where('c.deleted', 0)
-                ->where('c.end_date', '>=', now())
-                ->select('c.*', 'uc.time_taken')
-                ->first();
-        }
-    
-        if (!$campaign_data) {
+   public function get_prediction_details(Request $request)
+{
+    $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
+
+    // Step 1: Get campaign data
+    if ($request->has('campaign_id')) {
+        $campaign_data = DB::table('campaigns as c')
+            ->leftJoin('users_campaigns_timetaken as uc', function ($join) use ($request) {
+                $join->on('c.id', '=', 'uc.campaign_id')
+                    ->where('uc.user_id', '=', $request['logged_id']);
+            })
+            ->where('c.deleted', 0)
+            ->where('c.id', $request['campaign_id'])
+            ->where('c.end_date', '>=', now())
+            ->select('c.*', 'uc.time_taken')
+            ->get(); // make it always a collection
+    // return response()->json($campaign_data);
+            
+    } else {
+        $user_linked = DB::table('users as u')
+            ->leftJoin('campaign_users as c', 'u.id', '=', 'c.user_id')
+            ->where('u.id', $request['logged_id'])
+            ->where(function ($query) {
+                $query->where('u.deleted', 0)->orWhereNull('u.deleted');
+            })
+            ->select('u.*', 'c.*', 'u.id')
+            ->orderByDesc('u.created_at')
+            ->first();
+
+        if (!$user_linked) {
             return response()->json(['status' => true, 'data' => []]);
         }
-    
-        // Fetch campaign details
+
+        $campaign_data = DB::table('campaigns as c')
+            ->leftJoin('users_campaigns_timetaken as uc', function ($join) use ($request) {
+                $join->on('c.id', '=', 'uc.campaign_id')
+                    ->where('uc.user_id', '=', $request['logged_id']);
+            })
+            ->where('c.deleted', 0)
+            ->where('c.end_date', '>=', now())
+            ->select('c.*', 'uc.time_taken')
+            ->get();
+    }
+
+    if ($campaign_data->isEmpty()) {
+        return response()->json(['status' => true, 'data' => []]);
+    }
+
+    $finalData = [];
+    // return response()->json($campaign_data);
+    foreach ($campaign_data as $one_campaign_data) {
+        // Step 2: Get campaign details
         $campaign = DB::table('campaigns as cam')
             ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
-            ->where('cam.id', $campaign_data->id)
+            ->where('cam.id', $one_campaign_data->id)
             ->where('e.deleted', 0)
             ->where('cam.deleted', 0)
             ->select('cam.*', 'cam.campaign_title', 'cam.campaign_image as avatar', 'e.title as event_title')
             ->first();
-    
+
         if (!$campaign) {
-            return response()->json(['status' => true, 'data' => []]);
+            continue;
         }
-    
-        $campaign->total_time_taken = $campaign_data->time_taken;
-    
-        // Fetch participants
+
+        $campaign->total_time_taken = $one_campaign_data->time_taken;
+        $campaign->self = null;
+
+        // Step 3: Get participants
         $participants = DB::table('users as u')
             ->select(
                 'u.id as user_id',
@@ -183,17 +191,12 @@ class PredictionsController extends Controller{
             ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
             ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
             ->where('u.deleted', 0)
-            ->where('u.company_id','=',0)
             ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken')
             ->orderBy('total_points', 'desc')
             ->orderBy('time_taken', 'asc')
             ->orderBy('u.created_at', 'asc')
             ->get();
-            // return $participants;
-        // Format participants with ranks
-       
-        $campaign->self = null; // ← You forgot a semicolon here
-            // return $request;
+
         $participantsArray = $participants->map(function ($participant, $index) use ($request, &$campaign) {
             $data = [
                 'rank' => $index + 1,
@@ -205,29 +208,27 @@ class PredictionsController extends Controller{
                 'total_points' => $participant->total_points,
                 'time_taken' => $participant->time_taken,
             ];
-        
-            // Check if this participant is the logged-in user
+
             if ($participant->user_id == $request->logged_id) {
                 $campaign->self = $data;
             }
-        
+
             return $data;
         })->toArray();
-        
-    
+
         $campaign->participants = array_slice($participantsArray, 0, $request->input('limit', 10));
-    
-        // Fetch event-specific data
+
+        // Step 4: Event-specific data
         if ($campaign->event_title === "PREDICTION EVENT") {
             $games = DB::table('games')
                 ->where('campaign_id', $campaign->id)
                 ->where('deleted', 0)
                 ->select('id', 'name', 'team_a', 'team_b', 'points', 'selected_winner', 'game_start_date', 'game_end_date', 'game_start_time', 'game_end_time', 'team_a_image', 'team_b_image')
                 ->get();
-    
+
             if (!$games->isEmpty()) {
-                $teamASelections = $participants->where('predicted_answer', $games[0]->team_a)->count();
-                $teamBSelections = $participants->where('predicted_answer', $games[0]->team_b)->count();
+                $teamASelections = $participants->where('predicted_answers', $games[0]->team_a)->count();
+                $teamBSelections = $participants->where('predicted_answers', $games[0]->team_b)->count();
                 $totalSelections = $teamASelections + $teamBSelections;
                 $games[0]->team_a_percentage = $totalSelections ? ($teamASelections / $totalSelections) * 100 : 0;
                 $games[0]->team_b_percentage = $totalSelections ? ($teamBSelections / $totalSelections) * 100 : 0;
@@ -239,8 +240,7 @@ class PredictionsController extends Controller{
                 ->where('deleted', 0)
                 ->select('id', 'question', 'response_a', 'response_b', 'response_c', 'response_d', 'points', 'correct_answer', 'image', 'file_name')
                 ->get();
-        }
-        elseif ($campaign->event_title === "GAMES") {
+        } elseif ($campaign->event_title === "GAMES") {
             $campaign->html_games = DB::table('html_games')
                 ->where('campaign_id', $campaign->id)
                 ->where('deleted', 0)
@@ -251,9 +251,139 @@ class PredictionsController extends Controller{
                 ->where('deleted', 0)
                 ->get();
         }
-    
-        return response()->json(['status' => true, 'data' => $campaign]);
+
+        $finalData[] = $campaign;
     }
+
+    return response()->json(['status' => true, 'data' => $finalData]);
+}
+
+  public function get_single_prediction_details(Request $request)
+{
+    $currentDateTime = Carbon::now()->setTimezone('Asia/Kolkata')->format('Y-m-d');
+    if ($request->has('campaign_id')) {
+        $one_campaign_data = DB::table('campaigns as c')
+            ->leftJoin('users_campaigns_timetaken as uc', function ($join) use ($request) {
+                $join->on('c.id', '=', 'uc.campaign_id')
+                    ->where('uc.user_id', '=', $request['logged_id']);
+            })
+            ->where('c.deleted', 0)
+            ->where('c.id', $request['campaign_id'])
+            ->where('c.end_date', '>=', now())
+            ->select('c.*', 'uc.time_taken')
+            ->get(); 
+            // return $one_campaign_data;
+    } else {
+            return response()->json(['status' => true, 'data' => []]);        
+    }
+
+    if ($one_campaign_data->isEmpty()) {
+        return response()->json(['status' => true, 'data' => []]);
+    }
+else{
+            $one_campaign_data=$one_campaign_data[0];
+
+}
+    // $finalData = [];
+  
+        $campaign = DB::table('campaigns as cam')
+            ->leftJoin('events as e', 'cam.event_id', '=', 'e.id')
+            ->where('cam.id', $one_campaign_data->id)
+            ->where('e.deleted', 0)
+            ->where('cam.deleted', 0)
+            ->select('cam.*', 'cam.campaign_title', 'cam.campaign_image as avatar', 'e.title as event_title')
+            ->first();
+
+        $campaign->total_time_taken = $one_campaign_data->time_taken;
+        $campaign->self = null;
+
+        $participants = DB::table('users as u')
+            ->select(
+                'u.id as user_id',
+                'u.user_name',
+                'u.avatar',
+                'u.company_id',
+                DB::raw('GROUP_CONCAT(DISTINCT c.predicted_answer ORDER BY c.id SEPARATOR ",") as predicted_answers'),
+                DB::raw('COALESCE(totals.total_points, 0) as total_points'),
+                DB::raw('COALESCE(cu.time_taken, 0) as time_taken')
+            )
+            ->join('campaign_participants as c', function ($join) use ($campaign) {
+                $join->on('u.id', '=', 'c.user_id')
+                    ->where('c.campaign_id', '=', $campaign->id)
+                    ->where('c.deleted', 0);
+            })
+            ->leftJoin(DB::raw('(SELECT user_id, SUM(points) as total_points FROM campaign_participants WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as totals'), 'u.id', '=', 'totals.user_id')
+            ->leftJoin(DB::raw('(SELECT user_id, MIN(time_taken) as time_taken FROM users_campaigns_timetaken WHERE campaign_id = '.$campaign->id.' AND deleted = 0 GROUP BY user_id) as cu'), 'u.id', '=', 'cu.user_id')
+            ->where('u.deleted', 0)
+            ->groupBy('u.id', 'u.user_name', 'u.avatar', 'u.company_id', 'totals.total_points', 'cu.time_taken')
+            ->orderBy('total_points', 'desc')
+            ->orderBy('time_taken', 'asc')
+            ->orderBy('u.created_at', 'asc')
+            ->get();
+
+        $participantsArray = $participants->map(function ($participant, $index) use ($request, &$campaign) {
+            $data = [
+                'rank' => $index + 1,
+                'user_id' => $participant->user_id,
+                'user_name' => $participant->user_name,
+                'avatar' => $participant->avatar,
+                'company_id' => $participant->company_id,
+                'predicted_answers' => $participant->predicted_answers,
+                'total_points' => $participant->total_points,
+                'time_taken' => $participant->time_taken,
+            ];
+
+            if ($participant->user_id == $request->logged_id) {
+                $campaign->self = $data;
+            }
+
+            return $data;
+        })->toArray();
+
+        $campaign->participants = array_slice($participantsArray, 0, $request->input('limit', 10));
+
+        // Step 4: Event-specific data
+        if ($campaign->event_title === "PREDICTION EVENT") {
+            $games = DB::table('games')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->select('id', 'name', 'team_a', 'team_b', 'points', 'selected_winner', 'game_start_date', 'game_end_date', 'game_start_time', 'game_end_time', 'team_a_image', 'team_b_image')
+                ->get();
+
+            if (!$games->isEmpty()) {
+                $teamASelections = $participants->where('predicted_answers', $games[0]->team_a)->count();
+                $teamBSelections = $participants->where('predicted_answers', $games[0]->team_b)->count();
+                $totalSelections = $teamASelections + $teamBSelections;
+                $games[0]->team_a_percentage = $totalSelections ? ($teamASelections / $totalSelections) * 100 : 0;
+                $games[0]->team_b_percentage = $totalSelections ? ($teamBSelections / $totalSelections) * 100 : 0;
+                $campaign->games = $games;
+            }
+        } elseif ($campaign->event_title === "QUIZ") {
+            // RETURN "HI";
+            // return $campaign->id;
+            $campaign->quizzes = DB::table('quizzes')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->select('id', 'question', 'response_a', 'response_b', 'response_c', 'response_d', 'points', 'correct_answer', 'image', 'file_name')
+                ->get();
+        } elseif ($campaign->event_title === "GAMES") {
+            $campaign->html_games = DB::table('html_games')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->get();
+
+            $campaign->prizes = DB::table('prizes')
+                ->where('campaign_id', $campaign->id)
+                ->where('deleted', 0)
+                ->get();
+        }
+
+        // $finalData[] = $campaign;
+    
+
+    return response()->json(['status' => true, 'data' => $campaign]);
+}
+
     
     public function select_winner(REQUEST $request){
         $selected_winner=DB::table('games')

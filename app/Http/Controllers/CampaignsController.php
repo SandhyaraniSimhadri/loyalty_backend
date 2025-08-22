@@ -39,21 +39,14 @@ class CampaignsController extends Controller{
     }
     public function add_campaign(Request $request)
     {
-        // return "hello:";
-
-
         $tag_info = DB::table('campaigns')
         ->where('campaign_tag', '=', $request->campaign_tag)
-        ->where('id', '!=', $request->id) // Exclude the current campaign
+        ->where('id', '!=', $request->id) 
         ->get();
-// return $tag_info;
-        if ($tag_info->isEmpty() || $request->campaign_tag==null) {
-            // return "hello:";
 
+        if ($tag_info->isEmpty() || $request->campaign_tag==null) {
         $image=null;
         $date = date('Y-m-d H:i:s');
-        // return $request;
-      
         $data = array(
           
             'campaign_title' => $request->campaign_title,
@@ -83,6 +76,8 @@ class CampaignsController extends Controller{
             $login_image = null;
             $welcome_image = null;
             $campaign_image = null;
+            $thumbnail_image = null;
+
           
             
             if (!empty($request->logo_image)) {
@@ -100,8 +95,11 @@ class CampaignsController extends Controller{
             if (!empty($request->campaign_image)) {
                 $campaign_image = $this->saveBase64Image($request->campaign_image, $campaignFolder);
             }
-            
-    
+             
+            if (!empty($request->thumbnail_image)) {
+                $thumbnail_image = $this->saveBase64Image($request->thumbnail_image, $campaignFolder);
+            }
+            // return $request->thumbnail_image;
             // Update campaign with image paths
             DB::table('campaigns')
                 ->where('id', $aid)
@@ -109,7 +107,8 @@ class CampaignsController extends Controller{
                     'logo_image' => $logo_image,
                     'login_image' => $login_image,
                     'welcome_image' => $welcome_image,
-                    'campaign_image' => $campaign_image
+                    'campaign_image' => $campaign_image,
+                    'thumbnail_image' => $thumbnail_image
                 ]);
     
 
@@ -221,6 +220,8 @@ class CampaignsController extends Controller{
                 if (!empty($request->game_end_image)) {
                     $game_end_image = $this->saveBase64Image($request->game_end_image, $campaignFolder);
                 }
+
+           
                 $data = array(
           
                     'game_url' => $request['game_url'],
@@ -232,12 +233,9 @@ class CampaignsController extends Controller{
                     'selected_primary_color'=>$request['selected_primary_color'],
                     'selected_secondary_color'=>$request['selected_secondary_color'],
                     'selected_page_color'=>$request['selected_page_color'],
-
-                      'selected_startpage_color'=>$request['selected_startpage_color'],
-                        'selected_overpage_color'=>$request['selected_overpage_color'],
+                    'selected_startpage_color'=>$request['selected_startpage_color'],
+                    'selected_overpage_color'=>$request['selected_overpage_color'],
                     'selected_welcomepage_button_color'=>$request['selected_welcomepage_button_color'],
-                    
-
                     );
         
                     $gid= DB::table('html_games')->insertGetId($data);
@@ -427,6 +425,7 @@ class CampaignsController extends Controller{
         $logo_image = null;
         $login_image = null;
         $welcome_image = null;
+        $thumbnail_image = null;
         $campaign_image = null;
       
 
@@ -449,7 +448,16 @@ class CampaignsController extends Controller{
                     ->update(['login_image' => $login_image]);
             }
         }
-        
+        // return $request->thumbnail_image;
+         if (!empty($request->thumbnail_image)) {
+            $thumbnail_image =$this->saveBase64Image($request->thumbnail_image, $campaignFolder);
+            if ($thumbnail_image) {
+                $result=DB::table('campaigns')
+                    ->where('id', $request->id)
+                    ->update(['thumbnail_image' => $thumbnail_image]);
+            }
+        }
+        // return $result;
         // Welcome Image
         if (!empty($request->welcome_image)) {
             $welcome_image = $this->saveBase64Image($request->welcome_image, $campaignFolder);
@@ -656,6 +664,8 @@ class CampaignsController extends Controller{
             $game_welcome_image = null;
             $game_start_image = null;
             $game_end_image = null;
+           
+
 
             if (!empty($request->game_welcome_image)) {
                 $game_welcome_image = $this->saveBase64Image($request->game_welcome_image, $campaignFolder);
@@ -674,6 +684,7 @@ class CampaignsController extends Controller{
             else{
                 $game_end_image=$request->html_games['game_end_image'];
             }
+          
             $update_details=DB::table('html_games')
             ->where('campaign_id','=',$request->id)
             ->update([
@@ -682,6 +693,7 @@ class CampaignsController extends Controller{
                             'game_welcome_image' => $game_welcome_image,
                             'game_start_image' => $game_start_image,
                             'game_end_image' => $game_end_image,
+                           
                             'selected_primary_color'=>$request['html_games']['selected_primary_color'],
                             'selected_secondary_color'=>$request['html_games']['selected_secondary_color'],
                             'selected_page_color'=>$request['html_games']['selected_page_color'],
